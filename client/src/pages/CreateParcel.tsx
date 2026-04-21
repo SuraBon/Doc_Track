@@ -15,7 +15,7 @@ import { getBranches } from '@/lib/parcelService';
 import { toast } from 'sonner';
 import { Copy, Plus } from 'lucide-react';
 
-const DOC_TYPES = ['เอกสาร', 'พัสดุ', 'ของมีค่า', 'ของเย็น', 'อื่นๆ'];
+const DOC_TYPES = ['เอกสาร', 'พัสดุ'];
 const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
 
 export default function CreateParcel() {
