@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import Timeline from '@/components/Timeline';
 import type { TimelineEvent } from '@/types/timeline';
+import TrackingMap from '@/components/TrackingMap';
 
 export const parseParcelTimeline = (parcel: Parcel): TimelineEvent[] => {
   const events: TimelineEvent[] = [];
@@ -162,6 +163,7 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
     await loadParcels();
     await loadSummary();
   };
+  const selectedTimelineEvents = selectedParcel ? parseParcelTimeline(selectedParcel) : [];
 
   if (!isConfigured) {
     return (
@@ -327,7 +329,8 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
           </DialogHeader>
           {selectedParcel && (
             <div className="mt-4">
-              <Timeline events={parseParcelTimeline(selectedParcel)} />
+              <Timeline events={selectedTimelineEvents} />
+              <TrackingMap events={selectedTimelineEvents} />
             </div>
           )}
         </DialogContent>
