@@ -19,7 +19,22 @@ export function useParcelStore() {
     try {
       const response = await parcelService.getParcels(status);
       if (response.success) {
-        setParcels(response.parcels);
+        const overriddenParcels = response.parcels.map((parcel) => {
+          if (parcel['สถานะ'] === 'ส่งถึงแล้ว') {
+            const note = parcel['หมายเหตุ'] || '';
+            const lastForwardIdx = note.lastIndexOf('[ส่งต่อโดย:');
+            const lastProxyIdx = note.lastIndexOf('[รับแทนโดย:');
+            const lastNormalIdx = note.lastIndexOf('[รับพัสดุเรียบร้อย');
+            
+            const maxIdx = Math.max(lastForwardIdx, lastProxyIdx, lastNormalIdx);
+            
+            if (maxIdx >= 0 && maxIdx === lastForwardIdx) {
+              return { ...parcel, 'สถานะ': 'กำลังจัดส่ง' } as Parcel;
+            }
+          }
+          return parcel;
+        });
+        setParcels(overriddenParcels);
       } else {
         setError(response.error || 'ไม่สามารถโหลดข้อมูลได้');
       }
@@ -86,14 +101,14 @@ export function useParcelStore() {
         if (response.success) {
           await loadParcels();
           await loadSummary();
-          return true;
+          return response;
         } else {
           setError(response.error || 'ไม่สามารถยืนยันการรับได้');
-          return false;
+          return response;
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
-        return false;
+        return { success: false, error: err instanceof Error ? err.message : 'เกิดข้อผิดพลาด' };
       }
     },
     [loadParcels, loadSummary]

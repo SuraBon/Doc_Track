@@ -8,19 +8,31 @@ import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useParcelStore } from '@/hooks/useParcelStore';
+import { getBranches } from '@/lib/parcelService';
 import { toast } from 'sonner';
 import { Upload, Search, Camera } from 'lucide-react';
 
 export default function ConfirmReceipt() {
   const { confirmReceipt } = useParcelStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const branches = getBranches();
 
   const [trackingId, setTrackingId] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  
+  const [isForwarding, setIsForwarding] = useState(false);
+  const [forwardSender, setForwardSender] = useState('');
+  const [forwardFromBranch, setForwardFromBranch] = useState('');
+  const [forwardToBranch, setForwardToBranch] = useState('');
+  const [isProxy, setIsProxy] = useState(false);
+  const [proxyName, setProxyName] = useState('');
+
   const [isLoading, setIsLoading] = useState(false);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,17 +104,55 @@ export default function ConfirmReceipt() {
       return;
     }
 
+    if (isForwarding) {
+      if (!forwardSender.trim() || !forwardFromBranch || !forwardToBranch) {
+        toast.error('กรุณากรอกข้อมูลการส่งต่อให้ครบ (ชื่อผู้ส่ง, สาขาต้นทาง, สาขาปลายทาง)');
+        return;
+      }
+    }
+
+    if (isProxy && !proxyName.trim()) {
+      toast.error('กรุณาระบุชื่อผู้รับแทน');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const success = await confirmReceipt(trackingId, photoUrl, note);
-      if (success) {
-        toast.success('ยืนยันการรับสำเร็จ');
+      let finalNote = note;
+      const additionalNotes = [];
+      const nowStr = new Date().toLocaleString('th-TH');
+      
+      if (isForwarding && forwardToBranch) {
+        additionalNotes.push(`[ส่งต่อโดย: ${forwardSender} จากสาขา: ${forwardFromBranch} ไปสาขา: ${forwardToBranch} เมื่อ: ${nowStr}]`);
+      }
+      
+      if (isProxy && proxyName) {
+        additionalNotes.push(`[รับแทนโดย: ${proxyName} เมื่อ: ${nowStr}]`);
+      }
+
+      if (!isForwarding && !isProxy) {
+        additionalNotes.push(`[รับพัสดุเรียบร้อย เมื่อ: ${nowStr}]`);
+      }
+
+      if (additionalNotes.length > 0) {
+        finalNote = additionalNotes.join(' ') + (note ? ` ${note}` : '');
+      }
+
+      const response = await confirmReceipt(trackingId, photoUrl, finalNote);
+      if (response && response.success) {
+        toast.success('ยืนยันการส่งสำเร็จ');
         setTrackingId('');
         setPhotoUrl('');
         setPhotoPreview(null);
         setNote('');
+        setIsForwarding(false);
+        setForwardSender('');
+        setForwardFromBranch('');
+        setForwardToBranch('');
+        setIsProxy(false);
+        setProxyName('');
       } else {
-        toast.error('ไม่สามารถยืนยันการรับได้');
+        toast.error(`ไม่สามารถยืนยันการส่งได้: ${response?.error || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ'}`);
       }
     } finally {
       setIsLoading(false);
@@ -113,8 +163,8 @@ export default function ConfirmReceipt() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground">ยืนยันการรับพัสดุ</h1>
-        <p className="text-sm text-muted-foreground mt-1">อัปโหลดรูปภาพเพื่อยืนยันการรับพัสดุ</p>
+        <h1 className="text-3xl font-bold text-foreground">ยืนยันการส่งพัสดุ</h1>
+        <p className="text-sm text-muted-foreground mt-1">อัปโหลดรูปภาพเพื่อยืนยันการส่ง/รับพัสดุ</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -122,7 +172,7 @@ export default function ConfirmReceipt() {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>ยืนยันการรับ</CardTitle>
+              <CardTitle>ยืนยันการส่ง</CardTitle>
               <CardDescription>กรอก Tracking ID และอัปโหลดรูปภาพหลักฐาน</CardDescription>
             </CardHeader>
             <CardContent>
@@ -190,6 +240,88 @@ export default function ConfirmReceipt() {
                   </div>
                 )}
 
+                {/* Additional Options */}
+                <div className="space-y-4 pt-2">
+                  {/* Forwarding Option */}
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="forwarding" 
+                        checked={isForwarding} 
+                        onCheckedChange={(checked) => setIsForwarding(checked as boolean)} 
+                      />
+                      <label 
+                        htmlFor="forwarding" 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        ส่งต่อพัสดุไปสาขาอื่น
+                      </label>
+                    </div>
+                    {isForwarding && (
+                      <div className="pl-6 space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <Input 
+                          placeholder="ชื่อผู้ส่งต่อ (ผู้ส่งใหม่)" 
+                          value={forwardSender}
+                          onChange={(e) => setForwardSender(e.target.value)}
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Select value={forwardFromBranch} onValueChange={setForwardFromBranch}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="จากสาขา" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {branches.map((branch) => (
+                                <SelectItem key={branch} value={branch}>
+                                  {branch}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          <Select value={forwardToBranch} onValueChange={setForwardToBranch}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="ไปสาขา" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {branches.map((branch) => (
+                                <SelectItem key={branch} value={branch}>
+                                  {branch}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Proxy Receiver Option */}
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="proxy" 
+                        checked={isProxy} 
+                        onCheckedChange={(checked) => setIsProxy(checked as boolean)} 
+                      />
+                      <label 
+                        htmlFor="proxy" 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        มีผู้รับแทน
+                      </label>
+                    </div>
+                    {isProxy && (
+                      <div className="pl-6 animate-in fade-in slide-in-from-top-2">
+                        <Input 
+                          placeholder="ระบุชื่อผู้รับแทน" 
+                          value={proxyName} 
+                          onChange={(e) => setProxyName(e.target.value)} 
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Note */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">หมายเหตุ (ไม่บังคับ)</label>
@@ -205,7 +337,7 @@ export default function ConfirmReceipt() {
                 <div className="flex gap-3 pt-4">
                   <Button type="submit" disabled={isLoading || !photoUrl} className="gap-2 flex-1">
                     <Upload className="w-4 h-4" />
-                    {isLoading ? 'กำลังส่ง...' : 'ยืนยันการรับ'}
+                    {isLoading ? 'กำลังส่ง...' : 'ยืนยันการส่ง'}
                   </Button>
                 </div>
               </form>

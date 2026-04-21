@@ -13,6 +13,79 @@ import { useParcelStore } from '@/hooks/useParcelStore';
 import StatusBadge from '@/components/StatusBadge';
 import { RefreshCw, Settings } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import Timeline from '@/components/Timeline';
+import type { TimelineEvent } from '@/types/timeline';
+
+const parseParcelTimeline = (parcel: Parcel): TimelineEvent[] => {
+  const events: TimelineEvent[] = [];
+  let currentId = 1;
+
+  // 1. Created Event
+  events.push({
+    id: String(currentId++),
+    status: parcel['สถานะ'] === 'รอจัดส่ง' ? 'current' : 'completed',
+    title: 'รับพัสดุเข้าระบบ',
+    description: `ผู้ส่ง: ${parcel['ผู้ส่ง']} -> ผู้รับ: ${parcel['ผู้รับ']}`,
+    timestamp: parcel['วันที่สร้าง'],
+    location: parcel['สาขาผู้ส่ง'],
+  });
+
+  // 2. Parse Forwarding from Note
+  const note = parcel['หมายเหตุ'] || '';
+  const forwardRegex = /\[ส่งต่อโดย:\s*(.*?)\s*จากสาขา:\s*(.*?)\s*ไปสาขา:\s*(.*?)\s*เมื่อ:\s*(.*?)\]/g;
+  let match;
+  while ((match = forwardRegex.exec(note)) !== null) {
+    events.push({
+      id: String(currentId++),
+      status: 'completed',
+      title: 'ส่งต่อพัสดุ',
+      description: `ส่งต่อโดย: ${match[1]} ไปยังสาขา: ${match[3]}`,
+      timestamp: match[4],
+      location: match[2],
+    });
+  }
+
+  // 3. Status logic
+  if (parcel['สถานะ'] === 'ส่งถึงแล้ว') {
+    const proxyRegex = /\[รับแทนโดย:\s*(.*?)\s*เมื่อ:\s*(.*?)\]/;
+    const proxyMatch = proxyRegex.exec(note);
+    
+    let desc = 'ส่งถึงผู้รับเรียบร้อย';
+    let time = parcel['วันที่รับ'] || '';
+    if (proxyMatch) {
+      desc = `รับแทนโดย: ${proxyMatch[1]}`;
+      time = proxyMatch[2];
+    }
+
+    events.push({
+      id: String(currentId++),
+      status: 'completed',
+      title: 'พัสดุส่งถึงแล้ว',
+      description: desc,
+      timestamp: time,
+      location: parcel['สาขาผู้รับ'], // Could be the forwarded branch, but this serves as final destination
+      imageUrl: parcel['รูปยืนยัน'] || undefined,
+    });
+  } else if (parcel['สถานะ'] === 'กำลังจัดส่ง') {
+    events.push({
+      id: String(currentId++),
+      status: 'current',
+      title: 'กำลังจัดส่ง',
+      description: 'พัสดุอยู่ระหว่างการเดินทาง',
+      timestamp: '',
+      location: '',
+    });
+  }
+
+  return events;
+};
 
 interface DashboardProps {
   onConfigClick: () => void;
@@ -24,6 +97,14 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
   const [filteredParcels, setFilteredParcels] = useState<Parcel[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ทั้งหมด');
+  
+  const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+
+  const handleRowClick = (parcel: Parcel) => {
+    setSelectedParcel(parcel);
+    setIsTimelineOpen(true);
+  };
 
   useEffect(() => {
     if (isConfigured) {
@@ -179,7 +260,11 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
                 </thead>
                 <tbody>
                   {filteredParcels.map((parcel) => (
-                    <tr key={parcel.TrackingID} className="border-b border-border hover:bg-muted/50 transition-colors">
+                    <tr 
+                      key={parcel.TrackingID} 
+                      className="border-b border-border hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => handleRowClick(parcel)}
+                    >
                       <td className="py-3 px-4">
                         <code className="text-xs font-mono text-primary bg-primary/10 px-2 py-1 rounded">
                           {parcel.TrackingID}
@@ -220,6 +305,23 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
           )}
         </CardContent>
       </Card>
+
+      {/* Timeline Dialog */}
+      <Dialog open={isTimelineOpen} onOpenChange={setIsTimelineOpen}>
+        <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>ประวัติการเดินทางของพัสดุ</DialogTitle>
+            <DialogDescription>
+              Tracking ID: {selectedParcel?.TrackingID}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedParcel && (
+            <div className="mt-4">
+              <Timeline events={parseParcelTimeline(selectedParcel)} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

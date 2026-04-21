@@ -93,6 +93,16 @@ export default function Timeline({ events, className = '' }: TimelineProps) {
                 </>
               )}
             </div>
+            
+            {/* Image */}
+            {event.imageUrl && (
+              <div className="mt-4">
+                <p className="text-xs font-medium text-muted-foreground mb-2">รูปภาพหลักฐาน:</p>
+                <a href={event.imageUrl} target="_blank" rel="noopener noreferrer" className="block max-w-[200px] overflow-hidden rounded-md border border-border hover:opacity-90 transition-opacity">
+                  <img src={event.imageUrl} alt="หลักฐาน" className="w-full h-auto object-cover" />
+                </a>
+              </div>
+            )}
           </div>
         </div>
       ))}

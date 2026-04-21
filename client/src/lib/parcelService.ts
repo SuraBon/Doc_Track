@@ -17,7 +17,7 @@ import type {
   Parcel,
 } from '@/types/parcel';
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhgt61vkcrx8lyvB3B2w3HgHqKayf6qUm9YcDMId5TR2H0ORwpK-hIInChh7COJ3Lq1Q/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyXV7kYUh4XAtvmLASJbEU1-gWL8pKEdnF4UazJyuGVwNT9k8iVXB4sLiNzHhT4QFmjqA/exec';
 const DEFAULT_BRANCHES = [
   'ศูนย์ใหญ่บางนา',
   'มหาชัย',

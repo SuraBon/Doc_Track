@@ -166,8 +166,46 @@ function handleConfirmReceipt(payload) {
       // อัปเดตสถานะเป็น "ส่งถึงแล้ว"
       sheet.getRange(rowIndex, 10).setValue("ส่งถึงแล้ว");
       
+      // จัดการเซฟรูปภาพลง Google Drive ถ้าเป็น Base64
+      let finalPhotoUrl = payload.photoUrl;
+      
+      if (payload.photoUrl && payload.photoUrl.startsWith('data:image')) {
+        try {
+          const folderId = "1EdVJ73vJ0tGOxn1V3Jh4J2z98T2azrFH";
+          const rootFolder = DriveApp.getFolderById(folderId);
+          
+          // สร้างโฟลเดอร์ย่อยตามเดือน (เช่น 2026-04)
+          const dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM");
+          let folders = rootFolder.getFoldersByName(dateStr);
+          let folder;
+          if (folders.hasNext()) {
+            folder = folders.next();
+          } else {
+            folder = rootFolder.createFolder(dateStr);
+            folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          }
+          
+          const splitData = payload.photoUrl.split(',');
+          const base64Data = splitData[1];
+          const mimeTypeMatch = splitData[0].match(/:(.*?);/);
+          const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/jpeg';
+          const extension = mimeType.split('/')[1] || 'jpg';
+          
+          const filename = payload.trackingID + "_receipt." + extension;
+          const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType, filename);
+          
+          const file = folder.createFile(blob);
+          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          
+          // URL สำหรับดูรูปโดยตรง
+          finalPhotoUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
+        } catch (e) {
+          return createJsonResponse({ success: false, error: "Drive Error: " + e.toString() });
+        }
+      }
+      
       // อัปเดต URL รูปภาพยืนยัน
-      sheet.getRange(rowIndex, 11).setValue(payload.photoUrl);
+      sheet.getRange(rowIndex, 11).setValue(finalPhotoUrl);
       
       return createJsonResponse({ success: true });
     }

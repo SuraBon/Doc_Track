@@ -13,6 +13,7 @@ export interface TimelineEvent {
   timestamp: string;
   location?: string;
   icon?: string;
+  imageUrl?: string;
 }
 
 export interface ParcelTimeline {
