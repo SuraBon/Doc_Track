@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useParcelStore } from '@/hooks/useParcelStore';
 import StatusBadge from '@/components/StatusBadge';
-import { RefreshCw, Settings } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -25,15 +26,30 @@ import TrackingMap from '@/components/TrackingMap';
 import { parseParcelTimeline } from '@/lib/timeline';
 
 interface DashboardProps {
-  onConfigClick: () => void;
   isConfigured: boolean;
 }
 
-export default function Dashboard({ onConfigClick, isConfigured }: DashboardProps) {
+function parseCreatedAt(value: string | undefined): Date | null {
+  if (!value) return null;
+  // Expected from GAS: "yyyy-MM-dd HH:mm:ss"
+  const normalized = value.replace(' ', 'T');
+  const dt = new Date(normalized);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+
+function toCsvValue(value: unknown) {
+  const s = value == null ? '' : String(value);
+  const escaped = s.replaceAll('"', '""');
+  return `"${escaped}"`;
+}
+
+export default function Dashboard({ isConfigured }: DashboardProps) {
   const { parcels, summary, loading, loadParcels, loadSummary } = useParcelStore();
   const [filteredParcels, setFilteredParcels] = useState<Parcel[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ทั้งหมด');
+  const [exportStartDate, setExportStartDate] = useState('');
+  const [exportEndDate, setExportEndDate] = useState('');
 
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
@@ -79,6 +95,76 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
     await loadParcels();
     await loadSummary();
   };
+
+  const handleExport = () => {
+    const start = exportStartDate ? new Date(`${exportStartDate}T00:00:00`) : null;
+    const end = exportEndDate ? new Date(`${exportEndDate}T23:59:59.999`) : null;
+
+    if (start && Number.isNaN(start.getTime())) {
+      toast.error('วันที่เริ่มต้นไม่ถูกต้อง');
+      return;
+    }
+    if (end && Number.isNaN(end.getTime())) {
+      toast.error('วันที่สิ้นสุดไม่ถูกต้อง');
+      return;
+    }
+    if (start && end && start > end) {
+      toast.error('ช่วงวันที่ไม่ถูกต้อง (เริ่มต้นต้องไม่มากกว่าสิ้นสุด)');
+      return;
+    }
+
+    const rows = filteredParcels.filter((p) => {
+      if (!start && !end) return true;
+      const createdAt = parseCreatedAt(p['วันที่สร้าง']);
+      if (!createdAt) return false;
+      if (start && createdAt < start) return false;
+      if (end && createdAt > end) return false;
+      return true;
+    });
+    if (rows.length === 0) {
+      toast.error('ไม่มีข้อมูลในช่วงเวลาที่เลือก');
+      return;
+    }
+
+    const headers: Array<keyof Parcel> = [
+      'TrackingID',
+      'วันที่สร้าง',
+      'ผู้ส่ง',
+      'สาขาผู้ส่ง',
+      'ผู้รับ',
+      'สาขาผู้รับ',
+      'ประเภทเอกสาร',
+      'รายละเอียด',
+      'หมายเหตุ',
+      'สถานะ',
+      'วันที่รับ',
+      'รูปยืนยัน',
+    ];
+
+    const csvLines: string[] = [];
+    csvLines.push(headers.map((h) => toCsvValue(h)).join(','));
+    for (const p of rows) {
+      csvLines.push(headers.map((h) => toCsvValue(p[h])).join(','));
+    }
+
+    // UTF-8 BOM for Excel/Thai
+    const csv = `\uFEFF${csvLines.join('\n')}\n`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const safeStart = exportStartDate || 'all';
+    const safeEnd = exportEndDate || 'all';
+    const filename = `messenger-tracker_export_${safeStart}_to_${safeEnd}.csv`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`Export แล้ว ${rows.length} รายการ`);
+  };
   const selectedTimelineEvents = selectedParcel ? parseParcelTimeline(selectedParcel) : [];
 
   if (!isConfigured) {
@@ -87,13 +173,23 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>ยังไม่ได้ตั้งค่า</CardTitle>
-            <CardDescription>กรุณาตั้งค่า Google Apps Script URL ก่อนใช้งาน</CardDescription>
+            <CardDescription>กรุณาตั้งค่า Environment Variables ก่อนใช้งาน</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={onConfigClick} className="w-full gap-2">
-              <Settings className="w-4 h-4" />
-              ไปที่การตั้งค่า
-            </Button>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <div>ต้องมีค่า:</div>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>
+                  <code className="text-xs">VITE_GAS_URL</code>
+                </li>
+                <li>
+                  <code className="text-xs">VITE_GAS_API_KEY</code>
+                </li>
+              </ul>
+              <div className="pt-2">
+                ตั้งในไฟล์ <code className="text-xs">.env</code> (ตอน dev) หรือใน Vercel (ตอน deploy)
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -108,10 +204,31 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">ภาพรวมการจัดส่ง</h1>
           <p className="text-sm text-muted-foreground mt-1">ติดตามสถานะเอกสาร/พัสดุแบบ real-time</p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2 w-full md:w-auto">
-          <RefreshCw className="w-4 h-4" />
-          รีเฟรช
-        </Button>
+        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="date"
+              value={exportStartDate}
+              onChange={(e) => setExportStartDate(e.target.value)}
+              aria-label="export-start-date"
+            />
+            <Input
+              type="date"
+              value={exportEndDate}
+              onChange={(e) => setExportEndDate(e.target.value)}
+              aria-label="export-end-date"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleExport} variant="default" size="sm" className="gap-2 flex-1 md:flex-none">
+              Export
+            </Button>
+            <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2 flex-1 md:flex-none">
+              <RefreshCw className="w-4 h-4" />
+              รีเฟรช
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}

@@ -7,7 +7,6 @@ import Dashboard from "./pages/Dashboard";
 import CreateParcel from "./pages/CreateParcel";
 import ConfirmReceipt from "./pages/ConfirmReceipt";
 import Track from "./pages/Track";
-import Settings from "./pages/Settings";
 import { Button } from "@/components/ui/button";
 import { isConfigured, onConfigUpdated } from "./lib/parcelService";
 
@@ -27,7 +26,6 @@ function App() {
     { id: "create", label: "➕ สร้างรายการ", icon: "➕" },
     { id: "confirm", label: "📷 ยืนยันรับ", icon: "📷" },
     { id: "track", label: "🔍 ติดตาม", icon: "🔍" },
-    { id: "settings", label: "⚙️ ตั้งค่า", icon: "⚙️" },
   ];
 
   return (
@@ -42,7 +40,7 @@ function App() {
               <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">📦</span>
-                  <h1 className="text-lg md:text-xl font-bold text-foreground">Parcel Tracker</h1>
+                  <h1 className="text-lg md:text-xl font-bold text-foreground">Messenger Tracker</h1>
                 </div>
                 <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:justify-end">
                   {navItems.map((item) => (
@@ -63,15 +61,11 @@ function App() {
             {/* Content */}
             <main className="max-w-7xl mx-auto px-4 py-8">
               {currentPage === "dashboard" && (
-                <Dashboard 
-                  onConfigClick={() => setCurrentPage("settings")} 
-                  isConfigured={isConfiguredState}
-                />
+                <Dashboard isConfigured={isConfiguredState} />
               )}
               {currentPage === "create" && <CreateParcel />}
               {currentPage === "confirm" && <ConfirmReceipt />}
               {currentPage === "track" && <Track />}
-              {currentPage === "settings" && <Settings />}
             </main>
           </div>
         </TooltipProvider>

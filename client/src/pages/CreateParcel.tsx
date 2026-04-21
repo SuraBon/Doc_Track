@@ -17,6 +17,7 @@ import { Copy, Plus } from 'lucide-react';
 
 const DOC_TYPES = ['เอกสาร', 'พัสดุ'];
 const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
+const OTHER_DOC_TYPE_VALUE = '__OTHER_DOC_TYPE__';
 
 export default function CreateParcel() {
   const { createParcel, error } = useParcelStore();
@@ -46,6 +47,8 @@ export default function CreateParcel() {
       : OTHER_BRANCH_VALUE
     : '';
 
+  const docTypeSelectValue = formData.docType ? (DOC_TYPES.includes(formData.docType) ? formData.docType : OTHER_DOC_TYPE_VALUE) : '';
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -63,6 +66,19 @@ export default function CreateParcel() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (senderBranchSelectValue === OTHER_BRANCH_VALUE && !formData.senderBranch.trim()) {
+      toast.error('กรุณาระบุสาขาผู้ส่ง');
+      return;
+    }
+    if (receiverBranchSelectValue === OTHER_BRANCH_VALUE && !formData.receiverBranch.trim()) {
+      toast.error('กรุณาระบุสาขาผู้รับ');
+      return;
+    }
+    if (docTypeSelectValue === OTHER_DOC_TYPE_VALUE && !formData.docType.trim()) {
+      toast.error('กรุณาระบุประเภทเอกสาร/พัสดุ');
+      return;
+    }
 
     if (!formData.senderName || !formData.senderBranch || !formData.receiverName || !formData.receiverBranch || !formData.docType) {
       toast.error('กรุณากรอกข้อมูลที่จำเป็นให้ครบ');
@@ -168,6 +184,7 @@ export default function CreateParcel() {
                           onChange={handleInputChange}
                           placeholder="ระบุสาขาผู้ส่ง"
                           className="mt-2"
+                          required
                         />
                       )}
                     </div>
@@ -216,6 +233,7 @@ export default function CreateParcel() {
                           onChange={handleInputChange}
                           placeholder="ระบุสาขาผู้รับ"
                           className="mt-2"
+                          required
                         />
                       )}
                     </div>
@@ -227,7 +245,10 @@ export default function CreateParcel() {
                   <label className="text-sm font-medium text-foreground">
                     ประเภทเอกสาร/พัสดุ <span className="text-red-500">*</span>
                   </label>
-                  <Select value={formData.docType} onValueChange={(value) => handleSelectChange('docType', value)}>
+                  <Select
+                    value={docTypeSelectValue}
+                    onValueChange={(value) => handleSelectChange('docType', value === OTHER_DOC_TYPE_VALUE ? '' : value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="เลือกประเภท" />
                     </SelectTrigger>
@@ -237,8 +258,19 @@ export default function CreateParcel() {
                           {type}
                         </SelectItem>
                       ))}
+                      <SelectItem value={OTHER_DOC_TYPE_VALUE}>อื่นๆ (ระบุเอง)</SelectItem>
                     </SelectContent>
                   </Select>
+                  {docTypeSelectValue === OTHER_DOC_TYPE_VALUE && (
+                    <Input
+                      name="docType"
+                      value={formData.docType}
+                      onChange={handleInputChange}
+                      placeholder="ระบุประเภทเอกสาร/พัสดุ"
+                      className="mt-2"
+                      required
+                    />
+                  )}
                 </div>
 
                 {/* Description */}
@@ -260,7 +292,7 @@ export default function CreateParcel() {
                     name="note"
                     value={formData.note}
                     onChange={handleInputChange}
-                    placeholder="เช่น ห้ามเปิด, เก็บให้เย็น"
+                    placeholder="เช่น ห้ามเปิด, เอกสารสำคัญ"
                     rows={2}
                   />
                 </div>
@@ -297,7 +329,7 @@ export default function CreateParcel() {
                   <Button onClick={() => {
                     const printWindow = window.open('', '', 'width=400,height=300');
                     if (printWindow) {
-                      printWindow.document.write(`<div style="text-align:center;font-family:sans-serif;padding:20px;"><h2>DocTrack Parcel</h2><h1>${createdTrackingId}</h1><p>Date: ${new Date().toLocaleDateString()}</p><button onclick="window.print()" style="padding:10px;margin-top:20px;">Print</button></div>`);
+                      printWindow.document.write(`<div style="text-align:center;font-family:sans-serif;padding:20px;"><h2>Messenger Tracker</h2><h1>${createdTrackingId}</h1><p>Date: ${new Date().toLocaleDateString()}</p><button onclick="window.print()" style="padding:10px;margin-top:20px;">Print</button></div>`);
                       printWindow.document.close();
                     }
                   }} variant="outline" className="flex-1 gap-2">
