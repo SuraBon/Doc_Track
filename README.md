@@ -14,10 +14,21 @@ npm install
 npm run dev
 ```
 
+## Deploy (Vercel)
+
+- Import repo เข้า Vercel แล้วตั้งค่า
+  - **Framework Preset**: Vite
+  - **Build Command**: `pnpm build` (หรือ `npm run build`)
+  - **Output Directory**: `dist`
+- ตัวโปรเจกต์มี `vercel.json` เพื่อทำ SPA routing (refresh แล้วไม่ 404)
+- อย่าลืมตั้ง Environment Variables ใน Vercel:
+  - `VITE_GAS_URL`
+  - `VITE_GAS_API_KEY`
+
 ## Scripts
 
 - `npm run dev` - รัน local development
-- `npm run build` - build frontend + server
+- `npm run build` - build frontend
 - `npm run check` - TypeScript check
 - `npm run lint` - alias ไปที่ type-check
 - `npm run test` - watch tests
