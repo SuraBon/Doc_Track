@@ -64,14 +64,14 @@ export const parseParcelTimeline = (parcel: Parcel): TimelineEvent[] => {
   if (parcel['สถานะ'] === 'ส่งถึงแล้ว') {
     const proxyRegex = /\[รับแทนโดย:\s*(.*?)\s*เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/;
     const proxyMatch = proxyRegex.exec(note);
-    
+
     let desc = 'ส่งถึงผู้รับเรียบร้อย';
     let time = parcel['วันที่รับ'] || '';
     if (proxyMatch) {
       desc = `รับแทนโดย: ${proxyMatch[1]}`;
       time = proxyMatch[2];
     }
-    
+
     // Fallback: If no proxy image, maybe we have a normal delivery image?
     // Actually, normal delivery note is: [รับพัสดุเรียบร้อย เมื่อ: xxx รูปภาพ: xxx]
     const normalRegex = /\[รับพัสดุเรียบร้อย เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/;
@@ -117,7 +117,7 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
   const [filteredParcels, setFilteredParcels] = useState<Parcel[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ทั้งหมด');
-  
+
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
 
@@ -129,7 +129,7 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
   useEffect(() => {
     if (isConfigured) {
       loadParcels();
-      
+
       const interval = setInterval(() => {
         loadParcels();
       }, 180000); // 3 minutes
@@ -284,8 +284,8 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
                 </thead>
                 <tbody>
                   {filteredParcels.map((parcel) => (
-                    <tr 
-                      key={parcel.TrackingID} 
+                    <tr
+                      key={parcel.TrackingID}
                       className="border-b border-border hover:bg-muted/50 transition-colors cursor-pointer"
                       onClick={() => handleRowClick(parcel)}
                     >

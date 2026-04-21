@@ -94,7 +94,7 @@ export default function Timeline({ events, className = '' }: TimelineProps) {
                 </>
               )}
             </div>
-            
+
             {/* Image */}
             {event.imageUrl && (
               <div className="mt-4">
