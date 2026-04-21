@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { Copy, Plus } from 'lucide-react';
 
 const DOC_TYPES = ['เอกสาร', 'พัสดุ', 'ของมีค่า', 'ของเย็น', 'อื่นๆ'];
+const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
 
 export default function CreateParcel() {
   const { createParcel, error } = useParcelStore();
@@ -33,6 +34,17 @@ export default function CreateParcel() {
 
   const [createdTrackingId, setCreatedTrackingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const senderBranchSelectValue = formData.senderBranch
+    ? branches.includes(formData.senderBranch)
+      ? formData.senderBranch
+      : OTHER_BRANCH_VALUE
+    : '';
+  const receiverBranchSelectValue = formData.receiverBranch
+    ? branches.includes(formData.receiverBranch)
+      ? formData.receiverBranch
+      : OTHER_BRANCH_VALUE
+    : '';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -100,7 +112,7 @@ export default function CreateParcel() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground">สร้างรายการพัสดุใหม่</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">สร้างรายการพัสดุใหม่</h1>
         <p className="text-sm text-muted-foreground mt-1">กรอกข้อมูลรายละเอียดของพัสดุที่ต้องการจัดส่ง</p>
       </div>
 
@@ -133,7 +145,10 @@ export default function CreateParcel() {
                       <label className="text-sm font-medium text-foreground">
                         สาขาผู้ส่ง <span className="text-red-500">*</span>
                       </label>
-                      <Select value={formData.senderBranch} onValueChange={(value) => handleSelectChange('senderBranch', value)}>
+                      <Select
+                        value={senderBranchSelectValue}
+                        onValueChange={(value) => handleSelectChange('senderBranch', value === OTHER_BRANCH_VALUE ? '' : value)}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="เลือกสาขา" />
                         </SelectTrigger>
@@ -143,8 +158,18 @@ export default function CreateParcel() {
                               {branch}
                             </SelectItem>
                           ))}
+                          <SelectItem value={OTHER_BRANCH_VALUE}>อื่นๆ (ระบุเอง)</SelectItem>
                         </SelectContent>
                       </Select>
+                      {senderBranchSelectValue === OTHER_BRANCH_VALUE && (
+                        <Input
+                          name="senderBranch"
+                          value={formData.senderBranch}
+                          onChange={handleInputChange}
+                          placeholder="ระบุสาขาผู้ส่ง"
+                          className="mt-2"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -168,7 +193,10 @@ export default function CreateParcel() {
                       <label className="text-sm font-medium text-foreground">
                         สาขาผู้รับ <span className="text-red-500">*</span>
                       </label>
-                      <Select value={formData.receiverBranch} onValueChange={(value) => handleSelectChange('receiverBranch', value)}>
+                      <Select
+                        value={receiverBranchSelectValue}
+                        onValueChange={(value) => handleSelectChange('receiverBranch', value === OTHER_BRANCH_VALUE ? '' : value)}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="เลือกสาขา" />
                         </SelectTrigger>
@@ -178,8 +206,18 @@ export default function CreateParcel() {
                               {branch}
                             </SelectItem>
                           ))}
+                          <SelectItem value={OTHER_BRANCH_VALUE}>อื่นๆ (ระบุเอง)</SelectItem>
                         </SelectContent>
                       </Select>
+                      {receiverBranchSelectValue === OTHER_BRANCH_VALUE && (
+                        <Input
+                          name="receiverBranch"
+                          value={formData.receiverBranch}
+                          onChange={handleInputChange}
+                          placeholder="ระบุสาขาผู้รับ"
+                          className="mt-2"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -228,7 +266,7 @@ export default function CreateParcel() {
                 </div>
 
                 {/* Submit Button */}
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <Button type="submit" disabled={isLoading} className="gap-2 flex-1">
                     <Plus className="w-4 h-4" />
                     {isLoading ? 'กำลังสร้าง...' : 'สร้างรายการ'}
@@ -251,7 +289,7 @@ export default function CreateParcel() {
                 <div className="bg-white p-4 rounded border border-green-200">
                   <code className="text-lg font-mono font-bold text-primary">{createdTrackingId}</code>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button onClick={handleCopyTrackingId} variant="outline" className="flex-1 gap-2">
                     <Copy className="w-4 h-4" />
                     คัดลอก

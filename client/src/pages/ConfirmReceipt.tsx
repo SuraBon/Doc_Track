@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import { Upload, Search, Camera } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
 
+const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
+
 export default function ConfirmReceipt() {
   const { confirmReceipt } = useParcelStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,6 +40,17 @@ export default function ConfirmReceipt() {
   const [isChecking, setIsChecking] = useState(false);
   const [parcelDest, setParcelDest] = useState<string | null>(null);
   const [checkedParcel, setCheckedParcel] = useState<Parcel | null>(null);
+
+  const forwardFromSelectValue = forwardFromBranch
+    ? branches.includes(forwardFromBranch)
+      ? forwardFromBranch
+      : OTHER_BRANCH_VALUE
+    : '';
+  const forwardToSelectValue = forwardToBranch
+    ? branches.includes(forwardToBranch)
+      ? forwardToBranch
+      : OTHER_BRANCH_VALUE
+    : '';
 
   const handleCheckParcel = async () => {
     if (!trackingId.trim()) {
@@ -228,7 +241,7 @@ export default function ConfirmReceipt() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground">ยืนยันการส่งพัสดุ</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">ยืนยันการส่งพัสดุ</h1>
         <p className="text-sm text-muted-foreground mt-1">อัปโหลดรูปภาพเพื่อยืนยันการส่ง/รับพัสดุ</p>
       </div>
 
@@ -247,7 +260,7 @@ export default function ConfirmReceipt() {
                   <label className="text-sm font-medium text-foreground">
                     Tracking ID <span className="text-red-500">*</span>
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       placeholder="เช่น TRK20260420001"
                       value={trackingId}
@@ -259,6 +272,7 @@ export default function ConfirmReceipt() {
                       variant="secondary" 
                       onClick={handleCheckParcel}
                       disabled={isChecking}
+                      className="w-full sm:w-auto"
                     >
                       {isChecking ? '⏳' : <Search className="w-4 h-4" />}
                     </Button>
@@ -347,8 +361,11 @@ export default function ConfirmReceipt() {
                           value={forwardSender}
                           onChange={(e) => setForwardSender(e.target.value)}
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          <Select value={forwardFromBranch} onValueChange={setForwardFromBranch}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <Select
+                            value={forwardFromSelectValue}
+                            onValueChange={(value) => setForwardFromBranch(value === OTHER_BRANCH_VALUE ? '' : value)}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="จากสาขา" />
                             </SelectTrigger>
@@ -358,10 +375,21 @@ export default function ConfirmReceipt() {
                                   {branch}
                                 </SelectItem>
                               ))}
+                              <SelectItem value={OTHER_BRANCH_VALUE}>อื่นๆ (ระบุเอง)</SelectItem>
                             </SelectContent>
                           </Select>
+                          {forwardFromSelectValue === OTHER_BRANCH_VALUE && (
+                            <Input
+                              placeholder="ระบุสาขาต้นทาง"
+                              value={forwardFromBranch}
+                              onChange={(e) => setForwardFromBranch(e.target.value)}
+                            />
+                          )}
                           
-                          <Select value={forwardToBranch} onValueChange={setForwardToBranch}>
+                          <Select
+                            value={forwardToSelectValue}
+                            onValueChange={(value) => setForwardToBranch(value === OTHER_BRANCH_VALUE ? '' : value)}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="ไปสาขา" />
                             </SelectTrigger>
@@ -379,8 +407,16 @@ export default function ConfirmReceipt() {
                                   </SelectItem>
                                 );
                               })}
+                              <SelectItem value={OTHER_BRANCH_VALUE}>อื่นๆ (ระบุเอง)</SelectItem>
                             </SelectContent>
                           </Select>
+                          {forwardToSelectValue === OTHER_BRANCH_VALUE && (
+                            <Input
+                              placeholder="ระบุสาขาปลายทาง"
+                              value={forwardToBranch}
+                              onChange={(e) => setForwardToBranch(e.target.value)}
+                            />
+                          )}
                         </div>
                         {parcelDest && (
                           <p className="text-xs text-muted-foreground font-medium mt-1 bg-muted/50 p-2 rounded">
@@ -430,7 +466,7 @@ export default function ConfirmReceipt() {
                 </div>
 
                 {/* Submit Button */}
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <Button type="submit" disabled={isLoading || !photoUrl} className="gap-2 flex-1">
                     <Upload className="w-4 h-4" />
                     {isLoading ? 'กำลังส่ง...' : 'ยืนยันการส่ง'}

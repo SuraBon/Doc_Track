@@ -17,8 +17,9 @@ import type {
   Parcel,
 } from '@/types/parcel';
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyo_gnEeKuDJD_1usBKk5GMt2KBwRDJzMPjok18MHfJGh1C2rbCLMACxN6M7jStaz30RQ/exec';
-const DEFAULT_BRANCHES = [
+const GAS_URL = import.meta.env.VITE_GAS_URL || '';
+const GAS_API_KEY = import.meta.env.VITE_GAS_API_KEY || '';
+const LEGACY_DEFAULT_BRANCHES = [
   'ศูนย์ใหญ่บางนา',
   'มหาชัย',
   'ศาลายา',
@@ -28,16 +29,39 @@ const DEFAULT_BRANCHES = [
   'เดอะมอลล์บางกะปิ',
   'มีนบุรี',
 ];
+const DEFAULT_BRANCHES = [
+  'MS',
+  'พระประแดง',
+  'บางนา',
+  'มีนบุรี',
+  'เลียบด่วน',
+  'เดอะมอลล์บางกะปิ',
+  'วิภาวดี',
+  'พิบูลสงคราม',
+  'เดอะมอลล์บางแค',
+  'มหาชัย',
+  'ศาลายา',
+  'กาญจนา',
+  'เซ็นทรัล พระราม 2',
+];
+const CONFIG_UPDATED_EVENT = 'parcel-config-updated';
 
 export function getGasUrl() {
   return GAS_URL;
 }
 
-let BRANCHES = JSON.parse(localStorage.getItem('branches') || 'null') as string[] || DEFAULT_BRANCHES;
+const storedBranches = JSON.parse(localStorage.getItem('branches') || 'null') as string[] | null;
+const isLegacyBranches =
+  Array.isArray(storedBranches) &&
+  storedBranches.length === LEGACY_DEFAULT_BRANCHES.length &&
+  storedBranches.every((branch, index) => branch === LEGACY_DEFAULT_BRANCHES[index]);
+
+let BRANCHES = !storedBranches || isLegacyBranches ? DEFAULT_BRANCHES : storedBranches;
 
 export function setBranches(branches: string[]) {
   BRANCHES = branches;
   localStorage.setItem('branches', JSON.stringify(branches));
+  window.dispatchEvent(new Event(CONFIG_UPDATED_EVENT));
 }
 
 export function getBranches() {
@@ -48,6 +72,11 @@ export function isConfigured() {
   return !!GAS_URL && BRANCHES.length > 0;
 }
 
+export function onConfigUpdated(listener: () => void) {
+  window.addEventListener(CONFIG_UPDATED_EVENT, listener);
+  return () => window.removeEventListener(CONFIG_UPDATED_EVENT, listener);
+}
+
 async function callAPI<T>(payload: any): Promise<T | null> {
   if (!GAS_URL) {
     throw new Error('กรุณาตั้งค่า Google Apps Script URL ก่อน');
@@ -56,7 +85,7 @@ async function callAPI<T>(payload: any): Promise<T | null> {
   try {
     const response = await fetch(GAS_URL, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, apiKey: GAS_API_KEY }),
       headers: { 'Content-Type': 'text/plain' },
     });
 
@@ -143,17 +172,9 @@ export async function confirmReceipt(
 }
 
 export async function searchParcels(query: string): Promise<Parcel[]> {
-  const response = await getParcels('ทั้งหมด');
-
-  if (!response.success) {
-    return [];
-  }
-
-  const ql = query.toLowerCase();
-  return response.parcels.filter(
-    (p) =>
-      p['ผู้ส่ง'].toLowerCase().includes(ql) ||
-      p['ผู้รับ'].toLowerCase().includes(ql) ||
-      p['TrackingID'].toLowerCase().includes(ql)
-  );
+  const response = await callAPI<{ success: boolean; parcels?: Parcel[] }>({
+    action: 'searchParcels',
+    query,
+  });
+  return response?.success && response.parcels ? response.parcels : [];
 }

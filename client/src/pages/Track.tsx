@@ -8,7 +8,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useParcelStore } from '@/hooks/useParcelStore';
 import StatusBadge from '@/components/StatusBadge';
 import Timeline from '@/components/Timeline';
 import ImagePopup from '@/components/ImagePopup';
@@ -16,10 +15,10 @@ import { toast } from 'sonner';
 import { Search, Calendar } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
 import { getParcel, searchParcels } from '@/lib/parcelService';
-import { parseParcelTimeline } from './Dashboard';
+import { parseParcelTimeline } from '@/lib/timeline';
+import TrackingMap from '@/components/TrackingMap';
 
 export default function Track() {
-  const { confirmReceipt } = useParcelStore();
   const [trackingId, setTrackingId] = useState('');
   const [parcel, setParcel] = useState<Parcel | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +64,7 @@ export default function Track() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground">ติดตามพัสดุ</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">ติดตามพัสดุ</h1>
         <p className="text-sm text-muted-foreground mt-1">ค้นหา Tracking ID เพื่อดูสถานะการจัดส่ง</p>
       </div>
 
@@ -76,14 +75,14 @@ export default function Track() {
           <CardDescription>กรอก Tracking ID หรือค้นหาด้วยชื่อผู้ส่ง/ผู้รับ</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSearch} className="flex gap-2">
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
             <Input
               placeholder="เช่น TRK20260420001"
               value={trackingId}
               onChange={(e) => setTrackingId(e.target.value)}
               className="flex-1"
             />
-            <Button type="submit" disabled={isLoading} className="gap-2">
+            <Button type="submit" disabled={isLoading} className="gap-2 w-full sm:w-auto">
               <Search className="w-4 h-4" />
               {isLoading ? 'กำลังค้นหา...' : 'ค้นหา'}
             </Button>
@@ -189,6 +188,7 @@ export default function Track() {
               </CardHeader>
               <CardContent>
                 <Timeline events={timelineEvents} />
+                <TrackingMap events={timelineEvents} />
               </CardContent>
             </Card>
           )}

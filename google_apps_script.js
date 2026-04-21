@@ -1,4 +1,8 @@
 const SHEET_NAME = "Parcels";
+const API_KEY_PROPERTY = "API_KEY";
+const MAX_NOTE_LENGTH = 2000;
+const MAX_BASE64_LENGTH = 6 * 1024 * 1024;
+const TRACKING_ID_REGEX = /^TRK\d{8}\d{4,}$/;
 
 // นำลิงก์ Google Sheet ของคุณมาใส่ตรงนี้ (ในเครื่องหมายคำพูด)
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1mVw8ZdW5HXkSfu0CY_M1TI7fqJpt77GAA_pVC9m92AU/edit?usp=sharing";
@@ -9,6 +13,24 @@ function getSpreadsheet() {
   } catch (e) {
     return SpreadsheetApp.openByUrl(SHEET_URL);
   }
+}
+
+function getApiKey() {
+  return PropertiesService.getScriptProperties().getProperty(API_KEY_PROPERTY) || "";
+}
+
+function normalizeBranchName(branch) {
+  if (!branch) return "";
+  const value = String(branch).trim();
+  const aliases = {
+    "พันธุ์สงคราม": "พิบูลสงคราม",
+    "เซ็นทรัลพระราม 2": "เซ็นทรัล พระราม 2",
+  };
+  return aliases[value] || value;
+}
+
+function validateTrackingID(trackingID) {
+  return !!trackingID && TRACKING_ID_REGEX.test(String(trackingID).trim());
 }
 
 function authorizeDrive() {
@@ -44,6 +66,13 @@ function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
     const action = payload.action;
+    const configuredKey = getApiKey();
+    if (!configuredKey) {
+      return createJsonResponse({ success: false, error: "API key is not configured on script properties" });
+    }
+    if (payload.apiKey !== configuredKey) {
+      return createJsonResponse({ success: false, error: "Unauthorized" });
+    }
 
     if (action === 'createParcel') {
       return handleCreateParcel(payload);
@@ -55,6 +84,8 @@ function doPost(e) {
       return handleExportSummary();
     } else if (action === 'confirmReceipt') {
       return handleConfirmReceipt(payload);
+    } else if (action === 'searchParcels') {
+      return handleSearchParcels(payload);
     }
 
     return createJsonResponse({ success: false, error: "Invalid action" });
@@ -63,7 +94,22 @@ function doPost(e) {
   }
 }
 
+function doGet() {
+  return createJsonResponse({
+    success: true,
+    service: "doc-track-api",
+    version: "1.1.0",
+    timestamp: new Date().toISOString(),
+  });
+}
+
 function handleCreateParcel(payload) {
+  if (!payload.senderName || !payload.senderBranch || !payload.receiverName || !payload.receiverBranch || !payload.docType) {
+    return createJsonResponse({ success: false, error: "Missing required fields" });
+  }
+  if (payload.note && String(payload.note).length > MAX_NOTE_LENGTH) {
+    return createJsonResponse({ success: false, error: "Note is too long" });
+  }
   const sheet = getSpreadsheet().getSheetByName(SHEET_NAME);
   const date = new Date();
 
@@ -77,9 +123,9 @@ function handleCreateParcel(payload) {
     trackingId,
     createdDate,
     payload.senderName || "",
-    payload.senderBranch || "",
+    normalizeBranchName(payload.senderBranch || ""),
     payload.receiverName || "",
-    payload.receiverBranch || "",
+    normalizeBranchName(payload.receiverBranch || ""),
     payload.docType || "",
     payload.description || "",
     payload.note || "",
@@ -117,6 +163,9 @@ function handleGetParcels(payload) {
 }
 
 function handleGetParcel(payload) {
+  if (!validateTrackingID(payload.trackingID)) {
+    return createJsonResponse({ success: false, error: "Invalid trackingID format" });
+  }
   const sheet = getSpreadsheet().getSheetByName(SHEET_NAME);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
@@ -161,6 +210,18 @@ function handleExportSummary() {
 }
 
 function handleConfirmReceipt(payload) {
+  if (!validateTrackingID(payload.trackingID)) {
+    return createJsonResponse({ success: false, error: "Invalid trackingID format" });
+  }
+  if (!payload.photoUrl) {
+    return createJsonResponse({ success: false, error: "Missing photoUrl" });
+  }
+  if (payload.note && String(payload.note).length > MAX_NOTE_LENGTH) {
+    return createJsonResponse({ success: false, error: "Note is too long" });
+  }
+  if (String(payload.photoUrl).startsWith("data:image") && String(payload.photoUrl).length > MAX_BASE64_LENGTH) {
+    return createJsonResponse({ success: false, error: "Image payload is too large" });
+  }
   const sheet = getSpreadsheet().getSheetByName(SHEET_NAME);
   const data = sheet.getDataRange().getValues();
 
@@ -168,6 +229,10 @@ function handleConfirmReceipt(payload) {
     const row = data[i];
     if (row[0] === payload.trackingID) {
       const rowIndex = i + 1;
+      const currentStatus = row[9];
+      if (currentStatus === "ส่งถึงแล้ว") {
+        return createJsonResponse({ success: false, error: "Parcel already delivered" });
+      }
 
       sheet.getRange(rowIndex, 10).setValue("ส่งถึงแล้ว");
 
@@ -244,6 +309,50 @@ function handleConfirmReceipt(payload) {
   }
 
   return createJsonResponse({ success: false, error: "Tracking ID not found" });
+}
+
+function handleSearchParcels(payload) {
+  const query = (payload.query || "").toString().toLowerCase().trim();
+  if (!query) {
+    return createJsonResponse({ success: true, parcels: [] });
+  }
+
+  const sheet = getSpreadsheet().getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const parcels = [];
+
+  for (let i = data.length - 1; i >= 1; i--) {
+    const row = data[i];
+    const sender = String(row[2] || "").toLowerCase();
+    const receiver = String(row[4] || "").toLowerCase();
+    const tracking = String(row[0] || "").toLowerCase();
+
+    if (tracking.indexOf(query) === -1 && sender.indexOf(query) === -1 && receiver.indexOf(query) === -1) {
+      continue;
+    }
+
+    const parcel = {};
+    for (let j = 0; j < headers.length; j++) {
+      parcel[headers[j]] = row[j];
+    }
+
+    if (parcel["วันที่สร้าง"] && parcel["วันที่สร้าง"].getTime) {
+      parcel["วันที่สร้าง"] = Utilities.formatDate(parcel["วันที่สร้าง"], Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+    }
+
+    parcels.push(parcel);
+    if (parcels.length >= 50) break;
+  }
+
+  return createJsonResponse({ success: true, parcels: parcels });
+}
+
+function setupApiKey(value) {
+  if (!value) {
+    throw new Error("Missing API key value");
+  }
+  PropertiesService.getScriptProperties().setProperty(API_KEY_PROPERTY, String(value).trim());
 }
 
 function createJsonResponse(data) {

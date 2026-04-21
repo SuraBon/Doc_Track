@@ -1,2 +1,25 @@
 # doc track
 
+ระบบติดตามพัสดุแบบ React + Google Apps Script + Google Sheet
+
+## Setup
+
+1. คัดลอก `.env.example` เป็น `.env`
+2. ตั้งค่า `VITE_GAS_URL` และ `VITE_GAS_API_KEY`
+3. ใน `google_apps_script.js` ให้ตั้ง `SCRIPT_API_KEY` ให้ตรงกับ `VITE_GAS_API_KEY`
+4. ติดตั้ง dependency และรัน
+
+```bash
+npm install
+npm run dev
+```
+
+## Scripts
+
+- `npm run dev` - รัน local development
+- `npm run build` - build frontend + server
+- `npm run check` - TypeScript check
+- `npm run lint` - alias ไปที่ type-check
+- `npm run test` - watch tests
+- `npm run test:run` - run tests ครั้งเดียว
+

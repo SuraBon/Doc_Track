@@ -47,7 +47,7 @@ export default function Settings() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">การตั้งค่า</h1>
-        <p className="text-sm text-muted-foreground mt-1">ตั้งค่า Google Apps Script URL และรายชื่อสาขา</p>
+        <p className="text-sm text-muted-foreground mt-1">ตั้งค่ารายชื่อสาขา (URL และ API key ตั้งผ่านไฟล์ .env)</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

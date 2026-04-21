@@ -21,92 +21,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import Timeline from '@/components/Timeline';
-import type { TimelineEvent } from '@/types/timeline';
 import TrackingMap from '@/components/TrackingMap';
-
-export const parseParcelTimeline = (parcel: Parcel): TimelineEvent[] => {
-  const events: TimelineEvent[] = [];
-  let currentId = 1;
-
-  // 1. Created Event
-  events.push({
-    id: String(currentId++),
-    status: parcel['สถานะ'] === 'รอจัดส่ง' ? 'current' : 'completed',
-    title: 'รับพัสดุเข้าระบบ',
-    description: `ผู้ส่ง: ${parcel['ผู้ส่ง']} -> ผู้รับ: ${parcel['ผู้รับ']}`,
-    timestamp: parcel['วันที่สร้าง'],
-    location: parcel['สาขาผู้ส่ง'],
-  });
-
-  // 2. Parse Forwarding from Note
-  const note = parcel['หมายเหตุ'] || '';
-  const forwardRegex = /\[ส่งต่อโดย:\s*(.*?)\s*จากสาขา:\s*(.*?)\s*ไปสาขา:\s*(.*?)\s*เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/g;
-  let match;
-  const forwardEvents: TimelineEvent[] = [];
-  while ((match = forwardRegex.exec(note)) !== null) {
-    forwardEvents.push({
-      id: String(currentId++),
-      status: 'completed',
-      title: 'ส่งต่อพัสดุ',
-      description: `ส่งต่อโดย: ${match[1]} ไปยังสาขา: ${match[3]}`,
-      timestamp: match[4],
-      location: match[2],
-      imageUrl: match[5] || undefined,
-    });
-  }
-
-  if (parcel['สถานะ'] !== 'ส่งถึงแล้ว' && parcel['รูปยืนยัน'] && forwardEvents.length > 0) {
-    forwardEvents[forwardEvents.length - 1].imageUrl = parcel['รูปยืนยัน'];
-  }
-
-  events.push(...forwardEvents);
-
-  // 3. Status logic
-  if (parcel['สถานะ'] === 'ส่งถึงแล้ว') {
-    const proxyRegex = /\[รับแทนโดย:\s*(.*?)\s*เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/;
-    const proxyMatch = proxyRegex.exec(note);
-
-    let desc = 'ส่งถึงผู้รับเรียบร้อย';
-    let time = parcel['วันที่รับ'] || '';
-    if (proxyMatch) {
-      desc = `รับแทนโดย: ${proxyMatch[1]}`;
-      time = proxyMatch[2];
-    }
-
-    // Fallback: If no proxy image, maybe we have a normal delivery image?
-    // Actually, normal delivery note is: [รับพัสดุเรียบร้อย เมื่อ: xxx รูปภาพ: xxx]
-    const normalRegex = /\[รับพัสดุเรียบร้อย เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/;
-    const normalMatch = normalRegex.exec(note);
-    if (!proxyMatch && normalMatch) {
-      time = normalMatch[1];
-    }
-
-    let deliveryImageUrl = parcel['รูปยืนยัน'] || undefined;
-    if (proxyMatch && proxyMatch[3]) deliveryImageUrl = proxyMatch[3];
-    if (normalMatch && normalMatch[2]) deliveryImageUrl = normalMatch[2];
-
-    events.push({
-      id: String(currentId++),
-      status: 'completed',
-      title: 'พัสดุส่งถึงแล้ว',
-      description: desc,
-      timestamp: time,
-      location: parcel['สาขาผู้รับ'], // Could be the forwarded branch, but this serves as final destination
-      imageUrl: deliveryImageUrl,
-    });
-  } else if (parcel['สถานะ'] === 'กำลังจัดส่ง') {
-    events.push({
-      id: String(currentId++),
-      status: 'current',
-      title: 'กำลังจัดส่ง',
-      description: 'พัสดุอยู่ระหว่างการเดินทาง',
-      timestamp: '',
-      location: '',
-    });
-  }
-
-  return events;
-};
+import { parseParcelTimeline } from '@/lib/timeline';
 
 interface DashboardProps {
   onConfigClick: () => void;
@@ -187,12 +103,12 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">ภาพรวมการจัดส่ง</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">ภาพรวมการจัดส่ง</h1>
           <p className="text-sm text-muted-foreground mt-1">ติดตามสถานะเอกสาร/พัสดุแบบ real-time</p>
         </div>
-        <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2">
+        <Button onClick={handleRefresh} variant="outline" size="sm" className="gap-2 w-full md:w-auto">
           <RefreshCw className="w-4 h-4" />
           รีเฟรช
         </Button>
@@ -200,7 +116,7 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
 
       {/* Stats Cards */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">ทั้งหมด</CardTitle>
@@ -320,7 +236,7 @@ export default function Dashboard({ onConfigClick, isConfigured }: DashboardProp
 
       {/* Timeline Dialog */}
       <Dialog open={isTimelineOpen} onOpenChange={setIsTimelineOpen}>
-        <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-xl max-h-[85vh] overflow-y-auto p-4 md:p-6">
           <DialogHeader>
             <DialogTitle>ประวัติการเดินทางของพัสดุ</DialogTitle>
             <DialogDescription>
