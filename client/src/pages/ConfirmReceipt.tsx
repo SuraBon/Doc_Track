@@ -399,11 +399,14 @@ export default function ConfirmReceipt() {
                             </SelectContent>
                           </Select>
                           {forwardFromBranch === OTHER_BRANCH_VALUE && (
-                            <Input
-                              placeholder="ระบุสาขาต้นทาง"
-                              value={customForwardFromBranch}
-                              onChange={(e) => setCustomForwardFromBranch(e.target.value)}
-                            />
+                            <div className="mt-2">
+                              <Input
+                                placeholder="ระบุสาขาต้นทาง"
+                                value={customForwardFromBranch}
+                                onChange={(e) => setCustomForwardFromBranch(e.target.value)}
+                              />
+                              <p className="text-[11px] text-amber-600 mt-1">* สาขาที่ระบุเองนี้จะไม่แสดงพิกัดบนแผนที่ติดตามพัสดุ</p>
+                            </div>
                           )}
                           
                           <Select
@@ -434,11 +437,14 @@ export default function ConfirmReceipt() {
                             </SelectContent>
                           </Select>
                           {forwardToBranch === OTHER_BRANCH_VALUE && (
-                            <Input
-                              placeholder="ระบุสาขาปลายทาง"
-                              value={customForwardToBranch}
-                              onChange={(e) => setCustomForwardToBranch(e.target.value)}
-                            />
+                            <div className="mt-2">
+                              <Input
+                                placeholder="ระบุสาขาปลายทาง"
+                                value={customForwardToBranch}
+                                onChange={(e) => setCustomForwardToBranch(e.target.value)}
+                              />
+                              <p className="text-[11px] text-amber-600 mt-1">* สาขาที่ระบุเองนี้จะไม่แสดงพิกัดบนแผนที่ติดตามพัสดุ</p>
+                            </div>
                           )}
                         </div>
                         {parcelDest && (

@@ -165,13 +165,15 @@ export default function CreateParcel() {
                         </SelectContent>
                       </Select>
                       {formData.senderBranch === OTHER_BRANCH_VALUE && (
-                        <Input
-                          value={customSenderBranch}
-                          onChange={(e) => setCustomSenderBranch(e.target.value)}
-                          placeholder="ระบุสาขาผู้ส่ง"
-                          className="mt-2"
-                          required
-                        />
+                        <div className="mt-2">
+                          <Input
+                            value={customSenderBranch}
+                            onChange={(e) => setCustomSenderBranch(e.target.value)}
+                            placeholder="ระบุสาขาผู้ส่ง"
+                            required
+                          />
+                          <p className="text-[11px] text-amber-600 mt-1">* สาขาที่ระบุเองนี้จะไม่แสดงพิกัดบนแผนที่ติดตามพัสดุ</p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -216,13 +218,15 @@ export default function CreateParcel() {
                         </SelectContent>
                       </Select>
                       {formData.receiverBranch === OTHER_BRANCH_VALUE && (
-                        <Input
-                          value={customReceiverBranch}
-                          onChange={(e) => setCustomReceiverBranch(e.target.value)}
-                          placeholder="ระบุสาขาผู้รับ"
-                          className="mt-2"
-                          required
-                        />
+                        <div className="mt-2">
+                          <Input
+                            value={customReceiverBranch}
+                            onChange={(e) => setCustomReceiverBranch(e.target.value)}
+                            placeholder="ระบุสาขาผู้รับ"
+                            required
+                          />
+                          <p className="text-[11px] text-amber-600 mt-1">* สาขาที่ระบุเองนี้จะไม่แสดงพิกัดบนแผนที่ติดตามพัสดุ</p>
+                        </div>
                       )}
                     </div>
                   </div>
