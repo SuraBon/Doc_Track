@@ -88,8 +88,21 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
       );
     }
 
+    const start = exportStartDate ? new Date(`${exportStartDate}T00:00:00`) : null;
+    const end = exportEndDate ? new Date(`${exportEndDate}T23:59:59.999`) : null;
+    
+    if (start || end) {
+      filtered = filtered.filter((p) => {
+        const createdAt = parseCreatedAt(p['วันที่สร้าง']);
+        if (!createdAt) return false;
+        if (start && createdAt < start) return false;
+        if (end && createdAt > end) return false;
+        return true;
+      });
+    }
+
     setFilteredParcels(filtered);
-  }, [parcels, statusFilter, searchTerm]);
+  }, [parcels, statusFilter, searchTerm, exportStartDate, exportEndDate]);
 
   const handleRefresh = async () => {
     await loadParcels();
@@ -113,16 +126,9 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
       return;
     }
 
-    const rows = filteredParcels.filter((p) => {
-      if (!start && !end) return true;
-      const createdAt = parseCreatedAt(p['วันที่สร้าง']);
-      if (!createdAt) return false;
-      if (start && createdAt < start) return false;
-      if (end && createdAt > end) return false;
-      return true;
-    });
+    const rows = filteredParcels;
     if (rows.length === 0) {
-      toast.error('ไม่มีข้อมูลในช่วงเวลาที่เลือก');
+      toast.error('ไม่มีข้อมูลให้ Export');
       return;
     }
 
