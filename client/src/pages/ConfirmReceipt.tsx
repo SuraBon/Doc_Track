@@ -245,6 +245,16 @@ export default function ConfirmReceipt() {
 
       <StepIndicator />
 
+      {isLoading && (
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[100] flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-4">
+            <RefreshCw className="w-10 h-10 text-primary animate-spin" />
+          </div>
+          <p className="text-lg font-bold text-slate-900">กำลังบันทึกข้อมูล...</p>
+          <p className="text-slate-500 text-sm">กรุณารอสักครู่ ระบบกำลังประมวลผล</p>
+        </div>
+      )}
+
       {/* Step 1: Check Tracking ID */}
       {currentStep === 1 && (
         <Card className="border-none shadow-xl rounded-3xl overflow-hidden animate-in slide-in-from-right-4 duration-300">
