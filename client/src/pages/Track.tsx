@@ -12,7 +12,7 @@ import StatusBadge from '@/components/StatusBadge';
 import Timeline from '@/components/Timeline';
 import ImagePopup from '@/components/ImagePopup';
 import { toast } from 'sonner';
-import { Search, Calendar } from 'lucide-react';
+import { Search, Calendar, Copy, ClipboardPaste } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
 import { getParcel, searchParcels } from '@/lib/parcelService';
 import { parseParcelTimeline } from '@/lib/timeline';
@@ -68,6 +68,24 @@ export default function Track() {
     }
   };
 
+  const handleCopyTrackingID = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    toast.success(`คัดลอก ${id} แล้ว`);
+  };
+
+  const handlePasteTrackingID = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setTrackingId(text.trim().toUpperCase());
+        toast.success('วาง Tracking ID เรียบร้อย');
+      }
+    } catch (e) {
+      toast.error('ไม่สามารถวางข้อมูลได้');
+    }
+  };
+
   // Generate real timeline data from the parcel
   const timelineEvents = parcel ? parseParcelTimeline(parcel) : null;
 
@@ -87,12 +105,22 @@ export default function Track() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
-            <Input
-              placeholder="เช่น TRK20260420001"
-              value={trackingId}
-              onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
-              className="flex-1"
-            />
+            <div className="relative flex-1">
+              <Input
+                placeholder="เช่น TRK20260420001"
+                value={trackingId}
+                onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={handlePasteTrackingID}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                title="วางจากคลิปบอร์ด"
+              >
+                <ClipboardPaste className="w-4 h-4" />
+              </button>
+            </div>
             <Button type="submit" disabled={isLoading} className="gap-2 w-full sm:w-auto">
               <Search className="w-4 h-4" />
               {isLoading ? 'กำลังค้นหา...' : 'ค้นหา'}
@@ -120,9 +148,16 @@ export default function Track() {
                   }}
                 >
                   <div>
-                    <code className="text-sm font-mono text-primary bg-primary/10 px-2 py-1 rounded mb-2 inline-block">
-                      {p.TrackingID}
-                    </code>
+                    <button
+                      onClick={(e) => handleCopyTrackingID(e, p.TrackingID)}
+                      className="flex items-center gap-1.5 group/copy mb-2"
+                      title="คลิกเพื่อคัดลอก"
+                    >
+                      <code className="text-sm font-mono text-primary bg-primary/10 px-2 py-1 rounded group-hover/copy:bg-primary/20 transition-colors">
+                        {p.TrackingID}
+                      </code>
+                      <Copy className="w-3 h-3 text-muted-foreground opacity-0 group-hover/copy:opacity-100 transition-opacity" />
+                    </button>
                     <p className="text-sm text-foreground font-medium mt-1">ผู้ส่ง: {p['ผู้ส่ง']} → ผู้รับ: {p['ผู้รับ']}</p>
                     <p className="text-xs text-muted-foreground mt-1">อัปเดตล่าสุด: {p['วันที่สร้าง']}</p>
                   </div>
@@ -147,7 +182,14 @@ export default function Track() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-2">Tracking ID</h3>
-                  <code className="text-lg font-mono font-bold text-primary">{parcel.TrackingID}</code>
+                  <button
+                    onClick={(e) => handleCopyTrackingID(e, parcel.TrackingID)}
+                    className="flex items-center gap-2 group/copy"
+                    title="คลิกเพื่อคัดลอก"
+                  >
+                    <code className="text-lg font-mono font-bold text-primary group-hover:underline underline-offset-4">{parcel.TrackingID}</code>
+                    <Copy className="w-4 h-4 text-muted-foreground opacity-0 group-hover/copy:opacity-100 transition-opacity" />
+                  </button>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-2">สถานะ</h3>

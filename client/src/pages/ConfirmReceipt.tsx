@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useParcelStore } from '@/hooks/useParcelStore';
 import { getBranches, getParcel } from '@/lib/parcelService';
 import { toast } from 'sonner';
-import { Upload, Search, Camera } from 'lucide-react';
+import { Upload, Search, Camera, ClipboardPaste } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
 
 const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
@@ -111,6 +111,20 @@ export default function ConfirmReceipt() {
       toast.error(`เกิดข้อผิดพลาดในการตรวจสอบ: ${e.message || 'ไม่ทราบสาเหตุ'}`);
     } finally {
       setIsChecking(false);
+    }
+  };
+
+  const handlePasteTrackingID = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setTrackingId(text.trim().toUpperCase());
+        toast.success('วาง Tracking ID เรียบร้อย');
+      } else {
+        toast.error('ไม่มีข้อมูลในคลิปบอร์ด');
+      }
+    } catch (e) {
+      toast.error('ไม่สามารถอ่านข้อมูลจากคลิปบอร์ดได้ (โปรดอนุญาตสิทธิ์การเข้าถึง)');
     }
   };
 
@@ -303,23 +317,34 @@ export default function ConfirmReceipt() {
                   <label className="text-sm font-medium text-foreground">
                     Tracking ID <span className="text-red-500">*</span>
                   </label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      placeholder="เช่น TRK20260420001"
-                      value={trackingId}
-                      onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
-                      className="flex-1"
-                    />
-                    <Button 
-                      type="button" 
-                      variant="secondary" 
-                      onClick={handleCheckParcel}
-                      disabled={isChecking}
-                      className="w-full sm:w-auto"
-                    >
-                      {isChecking ? '⏳' : <Search className="w-4 h-4" />}
-                    </Button>
-                  </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="relative flex-1">
+                        <Input
+                          placeholder="เช่น TRK20260420001"
+                          value={trackingId}
+                          onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={handlePasteTrackingID}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                          title="วางจากคลิปบอร์ด"
+                        >
+                          <ClipboardPaste className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="secondary" 
+                        onClick={handleCheckParcel}
+                        disabled={isChecking}
+                        className="w-full sm:w-auto gap-2"
+                      >
+                        {isChecking ? '⏳' : <Search className="w-4 h-4" />}
+                        ตรวจสอบ
+                      </Button>
+                    </div>
                   
                   {checkedParcel && (
                     <div className={`mt-3 p-3 border rounded-md text-sm space-y-1 animate-in fade-in slide-in-from-top-2 ${isDelivered ? 'bg-red-50 border-red-100' : 'bg-blue-50 border-blue-100'}`}>

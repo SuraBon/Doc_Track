@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useParcelStore } from '@/hooks/useParcelStore';
 import StatusBadge from '@/components/StatusBadge';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Copy } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
 import { toast } from 'sonner';
 import {
@@ -57,6 +57,12 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
   const handleRowClick = (parcel: Parcel) => {
     setSelectedParcel(parcel);
     setIsTimelineOpen(true);
+  };
+
+  const handleCopyTrackingID = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Don't open timeline
+    navigator.clipboard.writeText(id);
+    toast.success(`คัดลอก ${id} แล้ว`);
   };
 
   useEffect(() => {
@@ -331,9 +337,16 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
                       onClick={() => handleRowClick(parcel)}
                     >
                       <td className="py-3 px-4">
-                        <code className="text-xs font-mono text-primary bg-primary/10 px-2 py-1 rounded">
-                          {parcel.TrackingID}
-                        </code>
+                        <button
+                          onClick={(e) => handleCopyTrackingID(e, parcel.TrackingID)}
+                          className="flex items-center gap-1.5 group/copy"
+                          title="คลิกเพื่อคัดลอก"
+                        >
+                          <code className="text-xs font-mono text-primary bg-primary/10 px-2 py-1 rounded group-hover/copy:bg-primary/20 transition-colors">
+                            {parcel.TrackingID}
+                          </code>
+                          <Copy className="w-3 h-3 text-muted-foreground opacity-0 group-hover/copy:opacity-100 transition-opacity" />
+                        </button>
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">{parcel['วันที่สร้าง']}</td>
                       <td className="py-3 px-4">
