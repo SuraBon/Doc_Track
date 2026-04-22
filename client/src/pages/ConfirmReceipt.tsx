@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useParcelStore } from '@/hooks/useParcelStore';
 import { getBranches, getParcel } from '@/lib/parcelService';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ export default function ConfirmReceipt() {
   const [isChecking, setIsChecking] = useState(false);
   const [parcelDest, setParcelDest] = useState<string | null>(null);
   const [checkedParcel, setCheckedParcel] = useState<Parcel | null>(null);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
   const forwardFromSelectValue = forwardFromBranch
     ? branches.includes(forwardFromBranch)
@@ -188,9 +190,11 @@ export default function ConfirmReceipt() {
       return;
     }
 
-    if (!window.confirm('คุณแน่ใจหรือไม่ว่าต้องการยืนยันการทำรายการนี้? ข้อมูลจะไม่สามารถแก้ไขได้ภายหลัง')) {
-      return;
-    }
+    setIsConfirmDialogOpen(true);
+  };
+
+  const executeConfirm = async () => {
+    setIsConfirmDialogOpen(false);
 
     setIsLoading(true);
     try {
@@ -501,6 +505,68 @@ export default function ConfirmReceipt() {
           </Card>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>ตรวจสอบข้อมูลก่อนยืนยัน</DialogTitle>
+            <DialogDescription>
+              โปรดตรวจสอบข้อมูลที่คุณกรอกให้ถูกต้อง ข้อมูลจะไม่สามารถแก้ไขได้ภายหลัง
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-3 items-center gap-4">
+              <span className="font-semibold text-sm text-muted-foreground text-right">Tracking ID:</span>
+              <span className="col-span-2 font-mono font-bold text-primary">{trackingId}</span>
+            </div>
+            
+            {isForwarding && (
+              <div className="bg-amber-50 p-3 rounded-md text-sm border border-amber-200 space-y-2">
+                <p className="font-bold text-amber-800">📦 ส่งต่อพัสดุ</p>
+                <p className="text-amber-900"><span className="font-semibold">ผู้ส่งต่อ:</span> {forwardSender}</p>
+                <p className="text-amber-900"><span className="font-semibold">จากสาขา:</span> {forwardFromBranch} <span className="font-semibold">→ ไปสาขา:</span> {forwardToBranch}</p>
+              </div>
+            )}
+            
+            {!isForwarding && isProxy && (
+              <div className="bg-blue-50 p-3 rounded-md text-sm border border-blue-200 space-y-2">
+                <p className="font-bold text-blue-800">👤 มีผู้รับแทน</p>
+                <p className="text-blue-900"><span className="font-semibold">ชื่อผู้รับแทน:</span> {proxyName}</p>
+              </div>
+            )}
+            
+            {!isForwarding && !isProxy && (
+              <div className="bg-green-50 p-3 rounded-md text-sm border border-green-200 space-y-2">
+                <p className="font-bold text-green-800">✅ ยืนยันการรับพัสดุตามปกติ<br/><span className="text-xs font-normal">(ผู้รับตัวจริง / ถึงปลายทางแล้ว)</span></p>
+              </div>
+            )}
+
+            {note && (
+              <div className="grid grid-cols-3 items-start gap-4">
+                <span className="font-semibold text-sm text-muted-foreground text-right">หมายเหตุ:</span>
+                <span className="col-span-2 text-sm">{note}</span>
+              </div>
+            )}
+
+            {photoPreview && (
+              <div className="flex flex-col items-center mt-2">
+                <span className="font-semibold text-sm text-muted-foreground mb-2">รูปภาพหลักฐาน:</span>
+                <img src={photoPreview} alt="Preview" className="w-32 h-32 object-cover rounded-md border border-border shadow-sm" />
+              </div>
+            )}
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)} className="flex-1">
+              ยกเลิก
+            </Button>
+            <Button onClick={executeConfirm} disabled={isLoading} className="flex-1 gap-2">
+              <Upload className="w-4 h-4" />
+              ยืนยันการส่ง
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
