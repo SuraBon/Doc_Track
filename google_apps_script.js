@@ -234,7 +234,20 @@ function handleConfirmReceipt(payload) {
     if (row[0] === payload.trackingID) {
       const rowIndex = i + 1;
       const currentStatus = row[9];
-      if (currentStatus === "ส่งถึงแล้ว") {
+      const noteStr = String(row[8] || "");
+      
+      let isActuallyDelivered = currentStatus === "ส่งถึงแล้ว";
+      if (isActuallyDelivered) {
+        const lastForwardIdx = noteStr.lastIndexOf('[ส่งต่อโดย:');
+        const lastProxyIdx = noteStr.lastIndexOf('[รับแทนโดย:');
+        const lastNormalIdx = noteStr.lastIndexOf('[รับพัสดุเรียบร้อย');
+        const maxIdx = Math.max(lastForwardIdx, lastProxyIdx, lastNormalIdx);
+        if (maxIdx >= 0 && maxIdx === lastForwardIdx) {
+          isActuallyDelivered = false; // it is in transit
+        }
+      }
+
+      if (isActuallyDelivered) {
         return createJsonResponse({ success: false, error: "Parcel already delivered" });
       }
 

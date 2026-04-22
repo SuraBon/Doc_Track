@@ -21,6 +21,7 @@ import TrackingMap from '@/components/TrackingMap';
 export default function Track() {
   const [trackingId, setTrackingId] = useState('');
   const [parcel, setParcel] = useState<Parcel | null>(null);
+  const [searchResults, setSearchResults] = useState<Parcel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -37,21 +38,31 @@ export default function Track() {
       const response = await getParcel(trackingId.trim());
       if (response.success && response.parcel) {
         setParcel(response.parcel);
+        setSearchResults([]);
         toast.success('พบข้อมูลพัสดุ');
       } else {
         // Try searching by name/ID
         const results = await searchParcels(trackingId.trim());
         if (results && results.length > 0) {
-          setParcel(results[0]);
-          toast.success(`พบข้อมูลพัสดุของ ${results[0]['ผู้รับ']}`);
+          if (results.length === 1) {
+            setParcel(results[0]);
+            setSearchResults([]);
+            toast.success(`พบข้อมูลพัสดุของ ${results[0]['ผู้รับ']}`);
+          } else {
+            setSearchResults(results);
+            setParcel(null);
+            toast.success(`พบข้อมูลพัสดุ ${results.length} รายการ`);
+          }
         } else {
           setParcel(null);
+          setSearchResults([]);
           toast.error('ไม่พบข้อมูลพัสดุ');
         }
       }
     } catch (err) {
       toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
       setParcel(null);
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +90,7 @@ export default function Track() {
             <Input
               placeholder="เช่น TRK20260420001"
               value={trackingId}
-              onChange={(e) => setTrackingId(e.target.value)}
+              onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
               className="flex-1"
             />
             <Button type="submit" disabled={isLoading} className="gap-2 w-full sm:w-auto">
@@ -89,6 +100,39 @@ export default function Track() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Search Results List */}
+      {searchResults.length > 0 && !parcel && (
+        <Card>
+          <CardHeader>
+            <CardTitle>ผลการค้นหา ({searchResults.length} รายการ)</CardTitle>
+            <CardDescription>คลิกที่รายการเพื่อดูรายละเอียด</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {searchResults.map((p) => (
+                <div 
+                  key={p.TrackingID} 
+                  className="p-4 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 animate-in fade-in slide-in-from-bottom-2"
+                  onClick={() => {
+                    setParcel(p);
+                    setSearchResults([]);
+                  }}
+                >
+                  <div>
+                    <code className="text-sm font-mono text-primary bg-primary/10 px-2 py-1 rounded mb-2 inline-block">
+                      {p.TrackingID}
+                    </code>
+                    <p className="text-sm text-foreground font-medium mt-1">ผู้ส่ง: {p['ผู้ส่ง']} → ผู้รับ: {p['ผู้รับ']}</p>
+                    <p className="text-xs text-muted-foreground mt-1">อัปเดตล่าสุด: {p['วันที่สร้าง']}</p>
+                  </div>
+                  <StatusBadge status={p['สถานะ']} />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Result */}
       {parcel && (
@@ -196,10 +240,10 @@ export default function Track() {
       )}
 
       {/* Empty State */}
-      {!parcel && trackingId && !isLoading && (
+      {!parcel && searchResults.length === 0 && trackingId && !isLoading && (
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="pt-6">
-            <p className="text-center text-amber-800">ไม่พบ Tracking ID นี้</p>
+            <p className="text-center text-amber-800">ไม่พบข้อมูล หรือ Tracking ID นี้</p>
           </CardContent>
         </Card>
       )}

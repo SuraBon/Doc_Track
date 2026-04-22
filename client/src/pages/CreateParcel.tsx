@@ -13,7 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useParcelStore } from '@/hooks/useParcelStore';
 import { getBranches } from '@/lib/parcelService';
 import { toast } from 'sonner';
-import { Copy, Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Copy, Plus, CheckCircle2 } from 'lucide-react';
 
 const DOC_TYPES = ['เอกสาร', 'พัสดุ'];
 const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
@@ -36,6 +37,7 @@ export default function CreateParcel() {
   const [customReceiverBranch, setCustomReceiverBranch] = useState('');
 
   const [createdTrackingId, setCreatedTrackingId] = useState<string | null>(null);
+  const [isResultOpen, setIsResultOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -78,6 +80,7 @@ export default function CreateParcel() {
 
       if (trackingId) {
         setCreatedTrackingId(trackingId);
+        setIsResultOpen(true);
         toast.success(`สร้างรายการสำเร็จ! ID: ${trackingId}`);
         setFormData({
           senderName: '',
@@ -113,7 +116,7 @@ export default function CreateParcel() {
         <p className="text-sm text-muted-foreground mt-1">กรอกข้อมูลรายละเอียดของพัสดุที่ต้องการจัดส่ง</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
         {/* Form */}
         <div className="lg:col-span-2">
           <Card>
@@ -280,40 +283,57 @@ export default function CreateParcel() {
           </Card>
         </div>
 
-        {/* Result Card */}
-        {createdTrackingId && (
-          <div className="lg:col-span-1">
-            <Card className="border-green-200 bg-green-50">
-              <CardHeader>
-                <CardTitle className="text-green-900">สร้างสำเร็จ!</CardTitle>
-                <CardDescription className="text-green-700">Tracking ID ของคุณ</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-white p-4 rounded border border-green-200">
-                  <code className="text-lg font-mono font-bold text-primary">{createdTrackingId}</code>
+      {/* Result Dialog */}
+      <Dialog open={isResultOpen} onOpenChange={setIsResultOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-green-600 flex items-center gap-2">
+              <CheckCircle2 className="w-6 h-6" />
+              สร้างรายการสำเร็จ!
+            </DialogTitle>
+            <DialogDescription>
+              บันทึกหรือแชร์ Tracking ID นี้เพื่อติดตามสถานะการจัดส่ง
+            </DialogDescription>
+          </DialogHeader>
+          {createdTrackingId && (
+            <>
+              <div className="flex flex-col items-center justify-center space-y-4 py-4">
+                <div className="bg-muted p-4 rounded-lg border border-border w-full text-center">
+                  <code className="text-2xl font-mono font-bold text-primary">{createdTrackingId}</code>
                 </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleCopyTrackingId} variant="outline" className="flex-1 gap-2">
-                    <Copy className="w-4 h-4" />
-                    คัดลอก
-                  </Button>
-                  <Button onClick={() => {
-                    const printWindow = window.open('', '', 'width=400,height=300');
-                    if (printWindow) {
-                      printWindow.document.write(`<div style="text-align:center;font-family:sans-serif;padding:20px;"><h2>DocTrack Parcel</h2><h1>${createdTrackingId}</h1><p>Date: ${new Date().toLocaleDateString()}</p><button onclick="window.print()" style="padding:10px;margin-top:20px;">Print</button></div>`);
-                      printWindow.document.close();
-                    }
-                  }} variant="outline" className="flex-1 gap-2">
-                    🖨️ พิมพ์
-                  </Button>
-                </div>
-                <p className="text-sm text-green-700">
-                  ✓ บันทึกหรือแชร์ Tracking ID นี้เพื่อติดตามสถานะการจัดส่ง
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${createdTrackingId}`} 
+                  alt="QR Code" 
+                  className="w-[150px] h-[150px] border border-border p-2 rounded-lg bg-white"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                <Button onClick={handleCopyTrackingId} variant="outline" className="flex-1 gap-2">
+                  <Copy className="w-4 h-4" />
+                  คัดลอก ID
+                </Button>
+                <Button onClick={() => {
+                  const printWindow = window.open('', '', 'width=400,height=500');
+                  if (printWindow) {
+                    printWindow.document.write(`
+                      <div style="text-align:center;font-family:sans-serif;padding:20px;">
+                        <h2>DocTrack Parcel</h2>
+                        <h1 style="font-size: 24px; margin-bottom: 10px;">${createdTrackingId}</h1>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${createdTrackingId}" alt="QR Code" style="margin: 20px 0; width: 150px; height: 150px;" />
+                        <p style="color: #666;">Date: ${new Date().toLocaleDateString()}</p>
+                        <button onclick="window.print()" style="padding:10px 20px;margin-top:20px; cursor: pointer; background: #000; color: #fff; border: none; border-radius: 4px;">Print</button>
+                      </div>
+                    `);
+                    printWindow.document.close();
+                  }
+                }} variant="default" className="flex-1 gap-2">
+                  🖨️ พิมพ์ใบปะหน้า
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
       </div>
     </div>
   );

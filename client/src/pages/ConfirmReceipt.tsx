@@ -220,6 +220,7 @@ export default function ConfirmReceipt() {
         setTrackingId('');
         setPhotoUrl('');
         setPhotoPreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
         setNote('');
         setIsForwarding(false);
         setForwardSender('');
@@ -264,7 +265,7 @@ export default function ConfirmReceipt() {
                     <Input
                       placeholder="เช่น TRK20260420001"
                       value={trackingId}
-                      onChange={(e) => setTrackingId(e.target.value)}
+                      onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
                       className="flex-1"
                     />
                     <Button 

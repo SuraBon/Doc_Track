@@ -34,10 +34,20 @@ export default function TrackingMap({ events }: TrackingMapProps) {
   const polylineRef = useRef<L.Polyline | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
 
-  // ดึงสาขาที่มีพิกัดออกมาจาก Timeline
-  const locations = events
-    .map(e => e.location)
-    .filter(loc => loc && BRANCH_COORDS[loc]) as string[];
+  // ดึงสาขาที่มีพิกัดออกมาจาก Timeline และดึงสาขาปลายทางจากการส่งต่อ
+  const locations: string[] = [];
+  events.forEach((e) => {
+    if (e.location && BRANCH_COORDS[e.location]) {
+      locations.push(e.location);
+    }
+    if (e.description && e.description.includes('ไปยังสาขา:')) {
+      const match = e.description.match(/ไปยังสาขา:\s*(.*)/);
+      if (match && match[1]) {
+        const dest = match[1].trim();
+        if (BRANCH_COORDS[dest]) locations.push(dest);
+      }
+    }
+  });
 
   // กรองเฉพาะสถานที่ที่ไม่ซ้ำกันติดกัน (กันกรณีอยู่สาขาเดิม)
   const pathBranches = locations.filter((loc, index, arr) => index === 0 || loc !== arr[index - 1]);
