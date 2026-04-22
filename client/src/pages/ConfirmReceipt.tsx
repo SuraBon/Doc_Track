@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useParcelStore } from '@/hooks/useParcelStore';
 import { getBranches, getParcel } from '@/lib/parcelService';
 import { toast } from 'sonner';
-import { Upload, Search, Camera, ClipboardPaste, ArrowRight, ArrowLeft, CheckCircle2, Package, User, MapPin } from 'lucide-react';
+import { Upload, Search, Camera, ClipboardPaste, ArrowRight, ArrowLeft, CheckCircle2, Package, User, MapPin, RefreshCw } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
 
 const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
@@ -290,8 +290,17 @@ export default function ConfirmReceipt() {
               disabled={isChecking || !trackingId || isDelivered} 
               className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
             >
-              {isChecking ? 'กำลังตรวจสอบ...' : 'ตรวจสอบพัสดุ'}
-              {!isChecking && <ArrowRight className="w-5 h-5 ml-2" />}
+              {isChecking ? (
+                <>
+                  <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                  กำลังตรวจสอบ...
+                </>
+              ) : (
+                <>
+                  ตรวจสอบพัสดุ
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -381,7 +390,7 @@ export default function ConfirmReceipt() {
                 <div className={`p-4 rounded-2xl border transition-all ${isForwarding ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100'}`}>
                   <div className="flex items-center space-x-2">
                     <Checkbox id="isForwarding" checked={isForwarding} onCheckedChange={(v) => setIsForwarding(!!v)} className="w-5 h-5" />
-                    <label htmlFor="isForwarding" className="text-sm font-bold cursor-pointer select-none flex-1">ต้องการส่งต่อพัสดุไปสาขาอื่น</label>
+                    <label htmlFor="isForwarding" className="text-sm font-bold cursor-pointer select-none flex-1">ส่งต่อไปยัง</label>
                   </div>
                   {isForwarding && (
                     <div className="mt-4 space-y-3 animate-in fade-in duration-300">
@@ -413,7 +422,7 @@ export default function ConfirmReceipt() {
                 <div className={`p-4 rounded-2xl border transition-all ${isProxy ? 'bg-sky-50 border-sky-200' : 'bg-white border-slate-100'}`}>
                   <div className="flex items-center space-x-2">
                     <Checkbox id="isProxy" checked={isProxy} onCheckedChange={(v) => setIsProxy(!!v)} className="w-5 h-5" />
-                    <label htmlFor="isProxy" className="text-sm font-bold cursor-pointer select-none flex-1">มีผู้รับแทน (Proxy)</label>
+                    <label htmlFor="isProxy" className="text-sm font-bold cursor-pointer select-none flex-1">มีผู้รับแทน</label>
                   </div>
                   {isProxy && (
                     <div className="mt-4 animate-in fade-in duration-300">
@@ -472,7 +481,14 @@ export default function ConfirmReceipt() {
           <DialogFooter className="flex gap-3">
             <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)} className="flex-1 rounded-xl h-12">ยกเลิก</Button>
             <Button onClick={executeConfirm} disabled={isLoading} className="flex-1 rounded-xl h-12 bg-primary font-bold shadow-lg shadow-primary/20">
-              {isLoading ? 'กำลังประมวลผล...' : 'ใช่, ยืนยันข้อมูล'}
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                  กำลังประมวลผล...
+                </>
+              ) : (
+                'ใช่, ยืนยันข้อมูล'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

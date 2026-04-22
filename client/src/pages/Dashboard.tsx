@@ -368,9 +368,9 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
                               <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 rounded">FROM</span>
                               <span className="font-bold text-slate-900">{parcel['ผู้ส่ง']}</span>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <div className="flex items-center gap-2">
                               <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 rounded">TO</span>
-                              <span className="font-medium">{parcel['ผู้รับ']}</span>
+                              <span className="font-bold text-slate-900">{parcel['ผู้รับ']}</span>
                             </div>
                           </div>
                         </div>
