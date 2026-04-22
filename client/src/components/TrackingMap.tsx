@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import L from 'leaflet';
 import { MapView } from './Map';
 import type { TimelineEvent } from '@/types/timeline';
@@ -28,7 +28,7 @@ interface TrackingMapProps {
 
 const DEFAULT_CENTER = BRANCH_COORDS['บางนา'];
 
-export default function TrackingMap({ events }: TrackingMapProps) {
+function TrackingMap({ events }: TrackingMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const polylineRef = useRef<L.Polyline | null>(null);
@@ -53,6 +53,11 @@ export default function TrackingMap({ events }: TrackingMapProps) {
   const pathBranches = locations.filter((loc, index, arr) => index === 0 || loc !== arr[index - 1]);
   const missingCoords = events.some((event) => event.location && !BRANCH_COORDS[event.location]);
   const hasRouteData = pathBranches.length > 0;
+
+  const handleMapReady = useCallback((map: L.Map) => {
+    mapRef.current = map;
+    setIsMapReady(true);
+  }, []);
 
   useEffect(() => {
     if (!mapRef.current || !isMapReady) return;
@@ -156,10 +161,7 @@ export default function TrackingMap({ events }: TrackingMapProps) {
         className="h-[240px] md:h-[300px] w-full"
         initialCenter={DEFAULT_CENTER}
         initialZoom={7}
-        onMapReady={(map) => {
-          mapRef.current = map;
-          setIsMapReady(true);
-        }} 
+        onMapReady={handleMapReady} 
       />
       <div className="px-3 py-2 border-t border-border bg-muted/40 text-xs text-muted-foreground flex items-center justify-between">
         <span>📍 จุดแวะพัก</span>
@@ -168,3 +170,5 @@ export default function TrackingMap({ events }: TrackingMapProps) {
     </div>
   );
 }
+
+export default memo(TrackingMap);
