@@ -43,16 +43,10 @@ export default function ConfirmReceipt() {
   const [checkedParcel, setCheckedParcel] = useState<Parcel | null>(null);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
-  const forwardFromSelectValue = forwardFromBranch
-    ? branches.includes(forwardFromBranch)
-      ? forwardFromBranch
-      : OTHER_BRANCH_VALUE
-    : '';
-  const forwardToSelectValue = forwardToBranch
-    ? branches.includes(forwardToBranch)
-      ? forwardToBranch
-      : OTHER_BRANCH_VALUE
-    : '';
+  const [customForwardFromBranch, setCustomForwardFromBranch] = useState('');
+  const [customForwardToBranch, setCustomForwardToBranch] = useState('');
+
+  // No need for forwardFromSelectValue and forwardToSelectValue anymore
 
   const handleCheckParcel = async () => {
     if (!trackingId.trim()) {
@@ -74,19 +68,26 @@ export default function ConfirmReceipt() {
           currentBranch = match[3];
         }
         
-        setForwardFromBranch(currentBranch);
+        setForwardFromBranch(branches.includes(currentBranch) ? currentBranch : OTHER_BRANCH_VALUE);
+        if (!branches.includes(currentBranch)) {
+          setCustomForwardFromBranch(currentBranch);
+        } else {
+          setCustomForwardFromBranch('');
+        }
         setParcelDest(p['สาขาผู้รับ']);
         setForwardToBranch(''); // Reset
+        setCustomForwardToBranch('');
         setCheckedParcel(p);
         
         toast.success(`พบข้อมูลพัสดุ (ปลายทาง: ${p['สาขาผู้รับ']})`);
       } else {
-        toast.error('ไม่พบข้อมูลพัสดุ');
+        toast.error(res.error === "Invalid trackingID format" ? "รูปแบบ Tracking ID ไม่ถูกต้อง" : 'ไม่พบข้อมูลพัสดุ หรือ Tracking ID ไม่ถูกต้อง');
         setParcelDest(null);
         setCheckedParcel(null);
       }
-    } catch (e) {
-      toast.error('เกิดข้อผิดพลาดในการตรวจสอบ');
+    } catch (e: any) {
+      console.error('Check Parcel Error:', e);
+      toast.error(`เกิดข้อผิดพลาดในการตรวจสอบ: ${e.message || 'ไม่ทราบสาเหตุ'}`);
     } finally {
       setIsChecking(false);
     }
@@ -173,13 +174,20 @@ export default function ConfirmReceipt() {
       return;
     }
 
+    if (!checkedParcel || checkedParcel.TrackingID !== trackingId.trim()) {
+      toast.error('กรุณากดปุ่ม 🔍 เพื่อตรวจสอบ Tracking ID ให้ถูกต้องก่อนทำรายการ');
+      return;
+    }
+
     if (!photoUrl) {
       toast.error('กรุณาเลือกรูปภาพ');
       return;
     }
 
     if (isForwarding) {
-      if (!forwardSender.trim() || !forwardFromBranch || !forwardToBranch) {
+      const finalForwardFromBranch = forwardFromBranch === OTHER_BRANCH_VALUE ? customForwardFromBranch.trim() : forwardFromBranch.trim();
+      const finalForwardToBranch = forwardToBranch === OTHER_BRANCH_VALUE ? customForwardToBranch.trim() : forwardToBranch.trim();
+      if (!forwardSender.trim() || !finalForwardFromBranch || !finalForwardToBranch) {
         toast.error('กรุณากรอกข้อมูลการส่งต่อให้ครบ (ชื่อผู้ส่ง, สาขาต้นทาง, สาขาปลายทาง)');
         return;
       }
@@ -201,9 +209,11 @@ export default function ConfirmReceipt() {
       let finalNote = note;
       const additionalNotes = [];
       const nowStr = new Date().toLocaleString('th-TH');
+      const finalForwardFromBranch = forwardFromBranch === OTHER_BRANCH_VALUE ? customForwardFromBranch.trim() : forwardFromBranch.trim();
+      const finalForwardToBranch = forwardToBranch === OTHER_BRANCH_VALUE ? customForwardToBranch.trim() : forwardToBranch.trim();
       
-      if (isForwarding && forwardToBranch) {
-        additionalNotes.push(`[ส่งต่อโดย: ${forwardSender} จากสาขา: ${forwardFromBranch} ไปสาขา: ${forwardToBranch} เมื่อ: ${nowStr} รูปภาพ: |IMAGE_URL|]`);
+      if (isForwarding && finalForwardToBranch) {
+        additionalNotes.push(`[ส่งต่อโดย: ${forwardSender} จากสาขา: ${finalForwardFromBranch} ไปสาขา: ${finalForwardToBranch} เมื่อ: ${nowStr} รูปภาพ: |IMAGE_URL|]`);
       }
       
       if (isProxy && proxyName) {
@@ -230,6 +240,8 @@ export default function ConfirmReceipt() {
         setForwardSender('');
         setForwardFromBranch('');
         setForwardToBranch('');
+        setCustomForwardFromBranch('');
+        setCustomForwardToBranch('');
         setParcelDest(null);
         setCheckedParcel(null);
         setIsProxy(false);
@@ -368,8 +380,11 @@ export default function ConfirmReceipt() {
                         />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           <Select
-                            value={forwardFromSelectValue}
-                            onValueChange={(value) => setForwardFromBranch(value === OTHER_BRANCH_VALUE ? '' : value)}
+                            value={forwardFromBranch}
+                            onValueChange={(value) => {
+                              setForwardFromBranch(value);
+                              if (value !== OTHER_BRANCH_VALUE) setCustomForwardFromBranch('');
+                            }}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="จากสาขา" />
@@ -383,17 +398,20 @@ export default function ConfirmReceipt() {
                               <SelectItem value={OTHER_BRANCH_VALUE}>อื่นๆ (ระบุเอง)</SelectItem>
                             </SelectContent>
                           </Select>
-                          {forwardFromSelectValue === OTHER_BRANCH_VALUE && (
+                          {forwardFromBranch === OTHER_BRANCH_VALUE && (
                             <Input
                               placeholder="ระบุสาขาต้นทาง"
-                              value={forwardFromBranch}
-                              onChange={(e) => setForwardFromBranch(e.target.value)}
+                              value={customForwardFromBranch}
+                              onChange={(e) => setCustomForwardFromBranch(e.target.value)}
                             />
                           )}
                           
                           <Select
-                            value={forwardToSelectValue}
-                            onValueChange={(value) => setForwardToBranch(value === OTHER_BRANCH_VALUE ? '' : value)}
+                            value={forwardToBranch}
+                            onValueChange={(value) => {
+                              setForwardToBranch(value);
+                              if (value !== OTHER_BRANCH_VALUE) setCustomForwardToBranch('');
+                            }}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="ไปสาขา" />
@@ -415,11 +433,11 @@ export default function ConfirmReceipt() {
                               <SelectItem value={OTHER_BRANCH_VALUE}>อื่นๆ (ระบุเอง)</SelectItem>
                             </SelectContent>
                           </Select>
-                          {forwardToSelectValue === OTHER_BRANCH_VALUE && (
+                          {forwardToBranch === OTHER_BRANCH_VALUE && (
                             <Input
                               placeholder="ระบุสาขาปลายทาง"
-                              value={forwardToBranch}
-                              onChange={(e) => setForwardToBranch(e.target.value)}
+                              value={customForwardToBranch}
+                              onChange={(e) => setCustomForwardToBranch(e.target.value)}
                             />
                           )}
                         </div>
@@ -525,7 +543,7 @@ export default function ConfirmReceipt() {
               <div className="bg-amber-50 p-3 rounded-md text-sm border border-amber-200 space-y-2">
                 <p className="font-bold text-amber-800">📦 ส่งต่อพัสดุ</p>
                 <p className="text-amber-900"><span className="font-semibold">ผู้ส่งต่อ:</span> {forwardSender}</p>
-                <p className="text-amber-900"><span className="font-semibold">จากสาขา:</span> {forwardFromBranch} <span className="font-semibold">→ ไปสาขา:</span> {forwardToBranch}</p>
+                <p className="text-amber-900"><span className="font-semibold">จากสาขา:</span> {forwardFromBranch === OTHER_BRANCH_VALUE ? customForwardFromBranch : forwardFromBranch} <span className="font-semibold">→ ไปสาขา:</span> {forwardToBranch === OTHER_BRANCH_VALUE ? customForwardToBranch : forwardToBranch}</p>
               </div>
             )}
             
