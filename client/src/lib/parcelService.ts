@@ -16,6 +16,7 @@ import type {
   ParcelSummary,
   Parcel,
 } from '@/types/parcel';
+import { applyDerivedStatus, applyDerivedStatuses } from './parcelStatus';
 
 const GAS_URL = import.meta.env.VITE_GAS_URL || '';
 const GAS_API_KEY = import.meta.env.VITE_GAS_API_KEY || '';
@@ -137,7 +138,15 @@ export async function getParcels(status: string = 'ทั้งหมด'): Prom
     status,
   };
 
-  return (await callAPI<GetParcelsResponse>(payload)) || { success: false, parcels: [] };
+  const response = await callAPI<GetParcelsResponse>(payload);
+  if (response && response.success && response.parcels) {
+    response.parcels = applyDerivedStatuses(response.parcels);
+    if (status !== 'ทั้งหมด') {
+      response.parcels = response.parcels.filter((p) => p['สถานะ'] === status);
+    }
+    return response;
+  }
+  return { success: false, parcels: [] };
 }
 
 export async function getParcel(trackingID: string): Promise<GetParcelResponse> {
@@ -146,7 +155,12 @@ export async function getParcel(trackingID: string): Promise<GetParcelResponse> 
     trackingID,
   };
 
-  return (await callAPI<GetParcelResponse>(payload)) || { success: false };
+  const response = await callAPI<GetParcelResponse>(payload);
+  if (response && response.success && response.parcel) {
+    response.parcel = applyDerivedStatus(response.parcel);
+    return response;
+  }
+  return { success: false };
 }
 
 export async function exportSummary(): Promise<ParcelSummary | null> {
@@ -176,5 +190,8 @@ export async function searchParcels(query: string): Promise<Parcel[]> {
     action: 'searchParcels',
     query,
   });
-  return response?.success && response.parcels ? response.parcels : [];
+  if (response?.success && response.parcels) {
+    return applyDerivedStatuses(response.parcels);
+  }
+  return [];
 }

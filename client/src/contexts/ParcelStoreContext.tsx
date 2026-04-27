@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { Parcel, ParcelSummary } from '@/types/parcel';
 import * as parcelService from '@/lib/parcelService';
-import { applyDerivedStatuses, summarizeParcels } from '@/lib/parcelStatus';
+import { summarizeParcels } from '@/lib/parcelStatus';
 
 interface ParcelStoreValue {
   parcels: Parcel[];
@@ -36,10 +36,9 @@ export function ParcelStoreProvider({ children }: { children: ReactNode }) {
     try {
       const response = await parcelService.getParcels(status);
       if (response.success) {
-        const normalizedParcels = applyDerivedStatuses(response.parcels);
-        setParcels(normalizedParcels);
+        setParcels(response.parcels);
         if (status === 'ทั้งหมด') {
-          setSummary(summarizeParcels(normalizedParcels));
+          setSummary(summarizeParcels(response.parcels));
         }
       } else {
         setError(response.error || 'ไม่สามารถโหลดข้อมูลได้');

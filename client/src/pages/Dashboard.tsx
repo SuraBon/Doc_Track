@@ -5,13 +5,8 @@
  */
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useParcelStore } from '@/hooks/useParcelStore';
 import StatusBadge from '@/components/StatusBadge';
-import { RefreshCw, Copy, Package, Truck, CheckCircle, Clock, Search, Filter, Download } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
 import { toast } from 'sonner';
 import {
@@ -25,6 +20,7 @@ import Timeline from '@/components/Timeline';
 import TrackingMap from '@/components/TrackingMap';
 import { parseParcelTimeline } from '@/lib/timeline';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatThaiDate } from '@/lib/dateUtils';
 
 interface DashboardProps {
   isConfigured: boolean;
@@ -44,27 +40,29 @@ function toCsvValue(value: unknown) {
 }
 
 // Stats Card Component for consistent look
-const StatsCard = ({ title, count, icon: Icon, colorClass, gradientClass }: any) => (
-  <Card className="overflow-hidden border-none shadow-md">
-    <div className={`h-1.5 ${colorClass}`} />
-    <CardContent className="p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
-          <h3 className="text-3xl font-bold tracking-tight">{count}</h3>
-        </div>
-        <div className={`p-3 rounded-2xl ${gradientClass} bg-opacity-10`}>
-          <Icon className={`w-6 h-6 ${colorClass.replace('bg-', 'text-')}`} />
-        </div>
+const StatsCard = ({ title, count, icon, borderColor, iconColor, bgIconColor }: any) => (
+  <div className="bg-white p-6 rounded-3xl border border-outline-variant/30 shadow-sm hover:shadow-xl transition-all duration-300 group">
+    <div className="flex justify-between items-start mb-6">
+      <div className={`w-12 h-12 ${bgIconColor} rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300`}>
+        <span className={`material-symbols-outlined text-2xl ${iconColor}`}>{icon}</span>
       </div>
-    </CardContent>
-  </Card>
+      <div className="flex flex-col items-end">
+        <span className="text-[10px] font-black text-on-surface-variant/30 uppercase tracking-[0.2em]">Real-time</span>
+        <div className={`h-1 w-8 rounded-full mt-1 ${borderColor.replace('border-', 'bg-')}`}></div>
+      </div>
+    </div>
+    <p className="font-display text-[10px] text-on-surface-variant font-black uppercase tracking-[0.15em] mb-1 opacity-60">{title}</p>
+    <div className="flex items-baseline gap-1">
+      <h3 className="font-display text-3xl font-black text-primary">{count}</h3>
+      <span className="text-[10px] font-bold text-on-surface-variant/40">รายการ</span>
+    </div>
+  </div>
 );
 
 const TableSkeleton = () => (
-  <div className="space-y-4">
+  <div className="space-y-4 p-6">
     {[...Array(5)].map((_, i) => (
-      <div key={i} className="flex items-center justify-between py-4 border-b border-slate-50 last:border-0">
+      <div key={i} className="flex items-center justify-between py-4 border-b border-outline-variant/10 last:border-0">
         <div className="flex-1 flex gap-4">
           <Skeleton className="h-12 w-12 rounded-lg" />
           <div className="space-y-2 flex-1">
@@ -199,242 +197,304 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
   if (!isConfigured) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="w-full max-w-md border-dashed">
-          <CardHeader className="text-center">
-            <CardTitle className="text-amber-600">⚠️ ยังไม่ได้ตั้งค่าระบบ</CardTitle>
-            <CardDescription>กรุณาตั้งค่า GAS URL และ API KEY ในไฟล์ .env</CardDescription>
-          </CardHeader>
-        </Card>
+        <div className="w-full max-w-md p-8 bg-white rounded-3xl shadow-xl border border-dashed border-error/30 text-center">
+          <span className="material-symbols-outlined text-5xl text-error mb-4">warning</span>
+          <h2 className="text-2xl font-bold text-primary mb-2">ยังไม่ได้ตั้งค่าระบบ</h2>
+          <p className="text-on-surface-variant">กรุณาตั้งค่า GAS URL และ API KEY ในไฟล์ .env</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      {/* Top Section */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Dashboard</h1>
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <Clock className="w-4 h-4" />
-            <span>รีเฟรชอัตโนมัติใน {Math.floor(refreshCountdown / 60)}:{(refreshCountdown % 60).toString().padStart(2, '0')} นาที</span>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header Section */}
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="font-display text-3xl font-bold text-primary mb-1">Dashboard</h1>
+          <p className="text-sm text-on-surface-variant">
+            ภาพรวมการจัดส่งเอกสารและพัสดุแบบเรียลไทม์
+            <span className="ml-2 inline-flex items-center gap-1 text-primary-fixed-dim bg-primary/5 px-2 py-0.5 rounded-full text-[10px]">
+              <span className="material-symbols-outlined text-[12px] animate-spin">refresh</span>
+              Auto-refresh in {Math.floor(refreshCountdown / 60)}:{(refreshCountdown % 60).toString().padStart(2, '0')}
+            </span>
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button 
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant text-primary rounded-lg font-display text-sm font-semibold hover:bg-surface-container transition-colors shadow-sm active:scale-95 duration-150"
+          >
+            <span className={`material-symbols-outlined text-sm ${loading ? 'animate-spin' : ''}`}>refresh</span>
+            Refresh
+          </button>
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-display text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm active:scale-95 duration-150"
+          >
+            <span className="material-symbols-outlined text-sm">download</span>
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Overview - Bento Style */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+        <StatsCard 
+          title="พัสดุทั้งหมด" 
+          count={summary?.total || 0} 
+          icon="inventory_2" 
+          borderColor="border-primary"
+          iconColor="text-primary"
+          bgIconColor="bg-surface-container"
+        />
+        <StatsCard 
+          title="รอจัดส่ง" 
+          count={summary?.pending || 0} 
+          icon="pending_actions" 
+          borderColor="border-secondary-container"
+          iconColor="text-secondary"
+          bgIconColor="bg-secondary-fixed/30"
+        />
+        <StatsCard 
+          title="กำลังจัดส่ง" 
+          count={summary?.transit || 0} 
+          icon="local_shipping" 
+          borderColor="border-blue-500"
+          iconColor="text-blue-600"
+          bgIconColor="bg-blue-50"
+        />
+        <StatsCard 
+          title="ส่งถึงแล้ว" 
+          count={summary?.delivered || 0} 
+          icon="task_alt" 
+          borderColor="border-tertiary-fixed-dim"
+          iconColor="text-green-700"
+          bgIconColor="bg-green-50"
+        />
+      </div>
+
+      {/* Filter Section */}
+      <div className="bg-white border border-outline-variant rounded-xl p-4 flex flex-wrap items-center gap-4 shadow-sm">
+        <div className="flex-1 min-w-[200px]">
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+            <input 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-display" 
+              placeholder="ค้นหา Tracking ID, ผู้ส่ง หรือ ผู้รับ..." 
+              type="text"
+            />
           </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center bg-white rounded-xl border border-slate-200 p-1 shadow-sm">
-            <div className="flex items-center px-3 border-r border-slate-100">
-              <span className="text-xs font-bold text-slate-400 mr-2">START</span>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="appearance-none bg-white border border-outline-variant rounded-lg pl-4 pr-10 py-2 text-sm font-display focus:ring-1 focus:ring-primary outline-none cursor-pointer"
+            >
+              <option value="ทั้งหมด">สถานะทั้งหมด</option>
+              <option value="รอจัดส่ง">รอจัดส่ง</option>
+              <option value="กำลังจัดส่ง">กำลังจัดส่ง</option>
+              <option value="ส่งถึงแล้ว">ส่งถึงแล้ว</option>
+            </select>
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none">expand_more</span>
+          </div>
+          
+          <div className="flex items-center bg-white border border-outline-variant rounded-lg overflow-hidden">
+            <div className="flex items-center px-3 border-r border-outline-variant/30">
+              <span className="text-[10px] font-bold text-on-surface-variant mr-2">START</span>
               <input 
                 type="date" 
-                className="text-sm bg-transparent border-none focus:ring-0 p-0" 
+                className="text-xs bg-transparent border-none focus:ring-0 p-0 h-8" 
                 value={exportStartDate}
                 onChange={(e) => setExportStartDate(e.target.value)}
               />
             </div>
             <div className="flex items-center px-3">
-              <span className="text-xs font-bold text-slate-400 mr-2">END</span>
+              <span className="text-[10px] font-bold text-on-surface-variant mr-2">END</span>
               <input 
                 type="date" 
-                className="text-sm bg-transparent border-none focus:ring-0 p-0" 
+                className="text-xs bg-transparent border-none focus:ring-0 p-0 h-8" 
                 value={exportEndDate}
                 onChange={(e) => setExportEndDate(e.target.value)}
               />
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Button onClick={handleExport} variant="outline" size="sm" className="h-10 px-4 rounded-xl shadow-sm hover:bg-slate-50">
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-            <Button onClick={handleRefresh} disabled={loading} size="sm" className="h-10 px-4 rounded-xl shadow-md transition-all active:scale-95">
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              รีเฟรช
-            </Button>
+        </div>
+      </div>
+
+      {/* Data Table Section */}
+      <div className="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-outline-variant/10 flex justify-between items-center bg-surface-container-low/30">
+          <h2 className="font-display text-base font-bold text-primary">รายการพัสดุล่าสุด</h2>
+          <div className="flex gap-1">
+            <button className="p-1.5 hover:bg-white rounded border border-transparent hover:border-outline-variant/30">
+              <span className="material-symbols-outlined text-[20px]">more_horiz</span>
+            </button>
+          </div>
+        </div>
+        
+        <div className="overflow-x-auto">
+          {loading && filteredParcels.length === 0 ? (
+            <TableSkeleton />
+          ) : filteredParcels.length === 0 ? (
+            <div className="py-20 text-center flex flex-col items-center justify-center text-on-surface-variant">
+              <div className="w-20 h-20 bg-surface-container-low rounded-full flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">search_off</span>
+              </div>
+              <p className="font-bold text-lg text-primary">ไม่พบข้อมูลพัสดุ</p>
+              <p className="text-sm">ลองปรับตัวกรองหรือคำค้นหาของคุณ</p>
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-primary text-white font-display text-[10px] uppercase tracking-widest">
+                  <th className="px-6 py-4 font-black rounded-tl-xl">Tracking ID</th>
+                  <th className="px-6 py-4 font-black">Sender & Receiver</th>
+                  <th className="px-6 py-4 font-black">Date & Time</th>
+                  <th className="px-6 py-4 font-black">Status</th>
+                  <th className="px-6 py-4 font-black text-right rounded-tr-xl">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/10 text-sm">
+                {filteredParcels.map((parcel) => (
+                  <tr 
+                    key={parcel.TrackingID}
+                    className="hover:bg-surface-container-low/30 transition-colors group cursor-pointer"
+                    onClick={() => handleRowClick(parcel)}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-primary bg-surface-container px-2 py-1 rounded text-xs font-medium">{parcel.TrackingID}</span>
+                        <button 
+                          onClick={(e) => handleCopyTrackingID(e, parcel.TrackingID)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-on-surface-variant hover:text-primary"
+                        >
+                          <span className="material-symbols-outlined text-sm">content_copy</span>
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-on-surface-variant/60">FROM:</span>
+                          <span className="font-semibold text-primary">{parcel['ผู้ส่ง']}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-on-surface-variant/60">TO:</span>
+                          <span className="text-on-surface-variant font-medium">{parcel['ผู้รับ']}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-on-surface-variant font-medium">
+                      <div className="flex flex-col">
+                        <span>{formatThaiDate(parcel['วันที่สร้าง'])}</span>
+                        <span className="text-[10px] opacity-60 font-mono">{parcel['วันที่สร้าง'].split(' ')[1]}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={parcel['สถานะ']} />
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button className="text-primary font-bold hover:underline text-xs">View Details</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        
+        <div className="px-6 py-4 bg-surface-container-low/30 border-t border-outline-variant/10 flex items-center justify-between">
+          <span className="text-xs text-on-surface-variant font-medium">Showing {filteredParcels.length} entries</span>
+          <div className="flex gap-2">
+            <button className="px-3 py-1 border border-outline-variant rounded bg-white text-xs font-semibold hover:bg-surface-container">Previous</button>
+            <button className="px-3 py-1 border border-primary bg-primary text-white rounded text-xs font-semibold">1</button>
+            <button className="px-3 py-1 border border-outline-variant rounded bg-white text-xs font-semibold hover:bg-surface-container">Next</button>
           </div>
         </div>
       </div>
 
-      {/* Stats Cards Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard 
-          title="พัสดุทั้งหมด" 
-          count={summary?.total || 0} 
-          icon={Package} 
-          colorClass="bg-slate-600" 
-          gradientClass="bg-slate-600"
-        />
-        <StatsCard 
-          title="รอจัดส่ง" 
-          count={summary?.pending || 0} 
-          icon={Clock} 
-          colorClass="bg-amber-500" 
-          gradientClass="bg-amber-500"
-        />
-        <StatsCard 
-          title="กำลังจัดส่ง" 
-          count={summary?.transit || 0} 
-          icon={Truck} 
-          colorClass="bg-sky-500" 
-          gradientClass="bg-sky-500"
-        />
-        <StatsCard 
-          title="ส่งถึงแล้ว" 
-          count={summary?.delivered || 0} 
-          icon={CheckCircle} 
-          colorClass="bg-emerald-500" 
-          gradientClass="bg-emerald-500"
-        />
-      </div>
-
-      {/* Filter & Table Section */}
-      <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
-        <CardHeader className="border-b border-slate-50 p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-xl font-bold">รายการพัสดุล่าสุด</CardTitle>
-              <CardDescription>แสดงรายการทั้งหมด {filteredParcels.length} รายการ</CardDescription>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                <Input
-                  placeholder="ค้นหา..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-10 w-full sm:w-64 rounded-xl border-slate-200 focus:ring-primary/20"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-40 h-10 rounded-xl border-slate-200">
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-3 h-3" />
-                    <SelectValue />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  <SelectItem value="ทั้งหมด">สถานะทั้งหมด</SelectItem>
-                  <SelectItem value="รอจัดส่ง">รอจัดส่ง</SelectItem>
-                  <SelectItem value="กำลังจัดส่ง">กำลังจัดส่ง</SelectItem>
-                  <SelectItem value="ส่งถึงแล้ว">ส่งถึงแล้ว</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {loading && filteredParcels.length === 0 ? (
-            <div className="p-6"><TableSkeleton /></div>
-          ) : filteredParcels.length === 0 ? (
-            <div className="py-20 text-center flex flex-col items-center justify-center text-slate-400">
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                <Search className="w-8 h-8" />
-              </div>
-              <p className="font-medium text-lg">ไม่พบข้อมูลพัสดุ</p>
-              <p className="text-sm">ลองปรับตัวกรองหรือคำค้นหาของคุณ</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-100">
-                    <th className="text-left py-4 px-6 font-bold text-slate-600">TRACKING ID</th>
-                    <th className="text-left py-4 px-6 font-bold text-slate-600">SENDER / RECEIVER</th>
-                    <th className="text-left py-4 px-6 font-bold text-slate-600">DATE</th>
-                    <th className="text-center py-4 px-6 font-bold text-slate-600">STATUS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {filteredParcels.map((parcel) => (
-                    <tr
-                      key={parcel.TrackingID}
-                      className="hover:bg-slate-50/80 transition-all cursor-pointer group"
-                      onClick={() => handleRowClick(parcel)}
-                    >
-                      <td className="py-5 px-6">
-                        <button
-                          onClick={(e) => handleCopyTrackingID(e, parcel.TrackingID)}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg hover:bg-primary/10 transition-colors"
-                        >
-                          <span className="font-mono font-bold text-primary text-xs tracking-wider">{parcel.TrackingID}</span>
-                          <Copy className="w-3 h-3 text-slate-400 group-hover:text-primary transition-colors" />
-                        </button>
-                      </td>
-                      <td className="py-5 px-6">
-                        <div className="flex items-center gap-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 rounded">FROM</span>
-                              <span className="font-bold text-slate-900">{parcel['ผู้ส่ง']}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 rounded">TO</span>
-                              <span className="font-bold text-slate-900">{parcel['ผู้รับ']}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-5 px-6 text-slate-500 font-medium">
-                        {parcel['วันที่สร้าง'].split(' ')[0]}
-                        <span className="block text-[10px] text-slate-400 font-mono">{parcel['วันที่สร้าง'].split(' ')[1]}</span>
-                      </td>
-                      <td className="py-5 px-6">
-                        <div className="flex justify-center">
-                          <StatusBadge status={parcel['สถานะ']} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Timeline Dialog */}
       <Dialog open={isTimelineOpen} onOpenChange={setIsTimelineOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0 rounded-3xl border-none shadow-2xl">
-          <DialogHeader className="p-6 bg-slate-900 text-white shrink-0">
+        <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-hidden p-0 rounded-2xl border-none shadow-2xl">
+          <div className="flex flex-col h-full max-h-[90vh]">
+            <DialogHeader className="p-6 bg-primary text-white shrink-0">
             <div className="flex items-center justify-between">
               <div>
-                <DialogTitle className="text-2xl font-extrabold">Tracking Journey</DialogTitle>
-                <DialogDescription className="text-slate-400 mt-1">
+                <DialogTitle className="text-2xl font-bold font-display">Tracking Journey</DialogTitle>
+                <DialogDescription className="text-primary-fixed-dim mt-1">
                   Tracking ID: <span className="font-mono text-white font-bold">{selectedParcel?.TrackingID}</span>
                 </DialogDescription>
               </div>
-              <div className="p-3 bg-white/10 rounded-2xl">
-                <Truck className="w-6 h-6 text-sky-400" />
+              <div className="p-3 bg-white/10 rounded-xl">
+                <span className="material-symbols-outlined text-3xl text-secondary-container">local_shipping</span>
               </div>
             </div>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+          <div className="flex-1 overflow-y-auto p-8 bg-background">
             {selectedParcel && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Timeline events={selectedTimelineEvents} />
+                <div>
+                  <h3 className="font-display font-bold text-lg mb-6 flex items-center gap-2 text-primary">
+                    <span className="material-symbols-outlined">history</span>
+                    ไทม์ไลน์การจัดส่ง
+                  </h3>
+                  <Timeline events={selectedTimelineEvents} />
+                </div>
                 <div className="space-y-6">
-                  <TrackingMap events={selectedTimelineEvents} />
-                  <Card className="bg-white rounded-2xl p-4 border-slate-100 shadow-sm">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Parcel Info</h4>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">ประเภท:</span>
-                        <span className="font-bold">{selectedParcel['ประเภทเอกสาร']}</span>
+                  <div className="rounded-xl overflow-hidden border border-outline-variant shadow-sm h-[300px]">
+                    <TrackingMap events={selectedTimelineEvents} />
+                  </div>
+                  <div className="bg-white rounded-2xl p-6 border border-outline-variant shadow-sm space-y-6">
+                    <h4 className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em] flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm">info</span>
+                      Parcel Details
+                    </h4>
+                    <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-sm">
+                      <div className="space-y-1">
+                        <p className="text-on-surface-variant/60 text-[10px] font-bold uppercase tracking-wider">ประเภท</p>
+                        <p className="font-display font-black text-primary text-base">{selectedParcel['ประเภทเอกสาร']}</p>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">สาขาต้นทาง:</span>
-                        <span className="font-bold">{selectedParcel['สาขาผู้ส่ง']}</span>
+                      <div className="space-y-1">
+                        <p className="text-on-surface-variant/60 text-[10px] font-bold uppercase tracking-wider">สถานะปัจจุบัน</p>
+                        <div className="flex items-center gap-1.5">
+                           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                           <p className="font-display font-black text-primary text-base">{selectedParcel['สถานะ']}</p>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">สาขาปลายทาง:</span>
-                        <span className="font-bold">{selectedParcel['สาขาผู้รับ']}</span>
+                      <div className="space-y-1">
+                        <p className="text-on-surface-variant/60 text-[10px] font-bold uppercase tracking-wider">ต้นทาง</p>
+                        <div className="flex items-center gap-1.5">
+                           <span className="material-symbols-outlined text-sm text-on-surface-variant/40">location_on</span>
+                           <p className="font-display font-bold text-primary">{selectedParcel['สาขาผู้ส่ง']}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-on-surface-variant/60 text-[10px] font-bold uppercase tracking-wider">ปลายทาง</p>
+                        <div className="flex items-center gap-1.5">
+                           <span className="material-symbols-outlined text-sm text-secondary">home_pin</span>
+                           <p className="font-display font-bold text-primary">{selectedParcel['สาขาผู้รับ']}</p>
+                        </div>
                       </div>
                     </div>
-                  </Card>
+                    {selectedParcel['รายละเอียด'] && (
+                      <div className="pt-4 border-t border-outline-variant/10">
+                        <p className="text-on-surface-variant/60 text-[10px] font-bold uppercase tracking-wider mb-2">รายละเอียดเพิ่มเติม</p>
+                        <div className="p-3 bg-surface-container-low/50 rounded-xl border border-outline-variant/20">
+                           <p className="text-sm text-primary font-medium leading-relaxed">{selectedParcel['รายละเอียด']}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
+          </div>
           </div>
         </DialogContent>
       </Dialog>

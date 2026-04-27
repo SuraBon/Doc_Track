@@ -14,13 +14,13 @@ export default function StatusBadge({ status, className = '' }: StatusBadgeProps
   const getStatusStyles = (status: ParcelStatus) => {
     switch (status) {
       case 'รอจัดส่ง':
-        return 'bg-amber-100 text-amber-800';
+        return 'bg-amber-100 text-amber-900 border border-amber-200/50 shadow-sm';
       case 'กำลังจัดส่ง':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-900 border border-blue-200/50 shadow-sm';
       case 'ส่งถึงแล้ว':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-100 text-emerald-900 border border-emerald-200/50 shadow-sm';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-100 text-slate-700 border border-slate-200/50';
     }
   };
 
@@ -31,17 +31,17 @@ export default function StatusBadge({ status, className = '' }: StatusBadgeProps
       case 'กำลังจัดส่ง':
         return 'bg-blue-500';
       case 'ส่งถึงแล้ว':
-        return 'bg-green-500';
+        return 'bg-emerald-500';
       default:
-        return 'bg-gray-400';
+        return 'bg-slate-400';
     }
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusStyles(status)} ${className}`}
+      className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-display font-bold transition-all duration-300 ${getStatusStyles(status)} ${className}`}
     >
-      <span className={`inline-block w-2 h-2 rounded-full ${getStatusDot(status)}`} />
+      <span className={`inline-block w-2 h-2 rounded-full ${getStatusDot(status)} ${status === 'กำลังจัดส่ง' ? 'animate-pulse' : ''}`} />
       {status}
     </span>
   );

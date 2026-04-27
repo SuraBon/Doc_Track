@@ -88,27 +88,29 @@ function TrackingMap({ events }: TrackingMapProps) {
       const isDestination = index === pathCoordinates.length - 1;
 
       markerDiv.className = [
-        'min-w-[64px] h-9 px-2 rounded-full border-2 border-white shadow-lg',
-        'text-[11px] font-semibold text-white flex items-center justify-center gap-1',
-        isDestination ? 'bg-emerald-600 ring-2 ring-emerald-200' : 'bg-slate-700',
+        'min-w-[70px] h-10 px-3 rounded-2xl border-2 border-white shadow-xl',
+        'text-[10px] font-black font-display text-white flex items-center justify-center gap-2 uppercase tracking-tighter transition-transform hover:scale-110',
+        isDestination ? 'bg-primary ring-4 ring-primary/20' : 'bg-blue-600',
       ].join(' ');
-      markerDiv.innerHTML = `${isLast ? '<span>🚚</span>' : '<span>📍</span>'}<span>${branchLabel.slice(0, 10)}</span>`;
+      
+      const icon = isLast ? 'local_shipping' : 'location_on';
+      markerDiv.innerHTML = `<span class="material-symbols-outlined text-sm font-bold">${icon}</span><span class="truncate">${branchLabel.slice(0, 10)}</span>`;
 
       const marker = L.marker([coord.lat, coord.lng], {
         icon: L.divIcon({
           html: markerDiv.outerHTML,
           className: 'branch-marker',
-          iconSize: [90, 32],
-          iconAnchor: [45, 16],
+          iconSize: [100, 40],
+          iconAnchor: [50, 20],
         }),
       });
       marker.bindPopup(`
-        <div style="padding: 6px 8px; font-size: 13px; min-width: 180px;">
-          <div style="font-weight: 700; color: #0f172a;">${branchLabel}</div>
-          <div style="color: #475569; margin-top: 4px;">${isDestination ? 'จุดล่าสุดของพัสดุ (ปลายทางล่าสุด)' : 'จุดแวะพักระหว่างทาง'}</div>
-          <div style="margin-top: 6px; font-size: 12px; color: #64748b;">คลิกนอก popup เพื่อปิด</div>
+        <div style="padding: 12px; font-family: 'Manrope', sans-serif; min-width: 220px;">
+          <div style="font-weight: 800; color: #091426; font-size: 14px; text-transform: uppercase;">${branchLabel}</div>
+          <div style="color: #61646b; margin-top: 6px; font-size: 12px; font-weight: 500;">${isDestination ? 'จุดล่าสุดของพัสดุ' : 'จุดแวะพักระหว่างทาง'}</div>
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; font-size: 11px; color: #fea619; font-weight: 700;">LOGITRACK NETWORK</div>
         </div>
-      `, { autoPanPadding: [20, 20] });
+      `, { autoPanPadding: [20, 20], className: 'logitrack-popup' });
       marker.addTo(map);
 
       markersRef.current.push(marker);
@@ -118,16 +120,19 @@ function TrackingMap({ events }: TrackingMapProps) {
     polylineRef.current = L.polyline(
       pathCoordinates.map((coord) => [coord.lat, coord.lng] as [number, number]),
       {
-        color: '#3b82f6',
-        opacity: 0.8,
-        weight: 4,
+        color: '#fea619',
+        opacity: 0.6,
+        weight: 6,
+        lineCap: 'round',
+        lineJoin: 'round',
+        dashArray: '10, 15',
       }
     );
     polylineRef.current.addTo(map);
 
     if (pathCoordinates.length > 1) {
       const bounds = L.latLngBounds(pathCoordinates.map((coord) => [coord.lat, coord.lng] as [number, number]));
-      map.fitBounds(bounds, { padding: [20, 20] });
+      map.fitBounds(bounds, { padding: [40, 40] });
       if (map.getZoom() > 14) map.setZoom(14);
     } else if (pathCoordinates.length === 1) {
       map.setView([pathCoordinates[0].lat, pathCoordinates[0].lng], 13);
@@ -147,25 +152,29 @@ function TrackingMap({ events }: TrackingMapProps) {
     if (!mapRef.current) return;
     setTimeout(() => {
       mapRef.current?.invalidateSize();
-    });
+    }, 100);
   }, [isMapReady]);
 
   return (
-    <div className="w-full rounded-xl overflow-hidden border border-border shadow-sm mt-6 bg-card">
+    <div className="w-full rounded-3xl overflow-hidden border border-outline-variant/30 shadow-md bg-white">
       {!hasRouteData && (
-        <div className="px-4 py-2 text-xs text-amber-700 bg-amber-50 border-b border-amber-100">
-          {!missingCoords ? 'ยังไม่มีข้อมูลตำแหน่งเส้นทางของพัสดุ แสดงศูนย์กระจายหลักแทน' : 'พบสาขาที่ไม่มีพิกัดใน Master Data แสดงศูนย์กระจายหลักแทน'}
+        <div className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-secondary bg-secondary-container/10 border-b border-outline-variant/10 flex items-center gap-2">
+          <span className="material-symbols-outlined text-base">info</span>
+          {!missingCoords ? 'ยังไม่มีข้อมูลตำแหน่งพัสดุ แสดงจุดศูนย์กลางหลัก' : 'พบสาขาที่ไม่มีพิกัดในระบบ แสดงจุดศูนย์กลางหลัก'}
         </div>
       )}
       <MapView 
-        className="h-[240px] md:h-[300px] w-full"
+        className="h-[300px] md:h-[400px] w-full"
         initialCenter={DEFAULT_CENTER}
         initialZoom={7}
         onMapReady={handleMapReady} 
       />
-      <div className="px-3 py-2 border-t border-border bg-muted/40 text-xs text-muted-foreground flex items-center justify-between">
-        <span>📍 จุดแวะพัก</span>
-        <span>🚚 จุดล่าสุด</span>
+      <div className="px-5 py-3 bg-surface-container-low border-t border-outline-variant/10 text-[10px] font-black text-on-surface-variant/40 uppercase tracking-widest flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-600"></span> จุดแวะพัก</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span> จุดล่าสุด</span>
+        </div>
+        <span className="text-secondary">LogiTrack Maps v2.0</span>
       </div>
     </div>
   );

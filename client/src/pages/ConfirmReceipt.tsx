@@ -4,18 +4,12 @@
  * Design: Premium Stepper UI
  */
 
-import { useRef, useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useRef, useState } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useParcelStore } from '@/hooks/useParcelStore';
 import { getBranches, getParcel } from '@/lib/parcelService';
+import { formatThaiDateTime } from '@/lib/dateUtils';
 import { toast } from 'sonner';
-import { Upload, Search, Camera, ClipboardPaste, ArrowRight, ArrowLeft, CheckCircle2, Package, User, MapPin, RefreshCw } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
 
 const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
@@ -31,7 +25,7 @@ export default function ConfirmReceipt() {
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [note, setNote] = useState('');
-  
+
   const [isForwarding, setIsForwarding] = useState(false);
   const [forwardSender, setForwardSender] = useState('');
   const [forwardFromBranch, setForwardFromBranch] = useState('');
@@ -54,13 +48,13 @@ export default function ConfirmReceipt() {
       toast.error('กรุณากรอก Tracking ID ก่อนตรวจสอบ');
       return;
     }
-    
+
     setIsChecking(true);
     try {
       const res = await getParcel(trackingId.trim());
       if (res.success && res.parcel) {
         const p = res.parcel;
-        
+
         let currentBranch = p['สาขาผู้ส่ง'];
         const note = p['หมายเหตุ'] || '';
         const forwardRegex = /\[ส่งต่อโดย:\s*(.*?)\s*จากสาขา:\s*(.*?)\s*ไปสาขา:\s*(.*?)\s*เมื่อ:\s*(.*?)\]/g;
@@ -68,12 +62,12 @@ export default function ConfirmReceipt() {
         while ((match = forwardRegex.exec(note)) !== null) {
           currentBranch = match[3];
         }
-        
+
         setForwardFromBranch(branches.includes(currentBranch) ? currentBranch : OTHER_BRANCH_VALUE);
         if (!branches.includes(currentBranch)) {
           setCustomForwardFromBranch(currentBranch);
         }
-        
+
         setParcelDest(p['สาขาผู้รับ']);
         setCheckedParcel(p);
 
@@ -91,7 +85,7 @@ export default function ConfirmReceipt() {
           }
         }
         setIsDelivered(actuallyDelivered);
-        
+
         if (actuallyDelivered) {
           toast.warning(`พัสดุนี้ถูกจัดส่งถึงที่หมายเรียบร้อยแล้ว`);
         } else {
@@ -175,10 +169,10 @@ export default function ConfirmReceipt() {
     try {
       let finalNote = note;
       const additionalNotes = [];
-      const nowStr = new Date().toLocaleString('th-TH');
+      const nowStr = formatThaiDateTime(new Date().toISOString());
       const finalForwardFromBranch = forwardFromBranch === OTHER_BRANCH_VALUE ? customForwardFromBranch.trim() : forwardFromBranch.trim();
       const finalForwardToBranch = forwardToBranch === OTHER_BRANCH_VALUE ? customForwardToBranch.trim() : forwardToBranch.trim();
-      
+
       if (isForwarding && finalForwardToBranch) {
         additionalNotes.push(`[ส่งต่อโดย: ${forwardSender} จากสาขา: ${finalForwardFromBranch} ไปสาขา: ${finalForwardToBranch} เมื่อ: ${nowStr} รูปภาพ: |IMAGE_URL|]`);
       }
@@ -214,22 +208,23 @@ export default function ConfirmReceipt() {
   };
 
   const StepIndicator = () => (
-    <div className="flex items-center justify-center mb-8">
+    <div className="flex items-center justify-center mb-10">
       {[1, 2, 3].map((step) => (
         <div key={step} className="flex items-center">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-            currentStep === step 
-              ? 'bg-primary text-white shadow-lg scale-110' 
-              : currentStep > step 
-                ? 'bg-emerald-500 text-white' 
-                : 'bg-slate-100 text-slate-400'
-          }`}>
-            {currentStep > step ? <CheckCircle2 className="w-6 h-6" /> : step}
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 font-display font-bold text-lg ${currentStep === step
+              ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-110'
+              : currentStep > step
+                ? 'bg-green-500 text-white'
+                : 'bg-surface-container text-on-surface-variant/40'
+            }`}>
+            {currentStep > step ? (
+              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+            ) : step}
           </div>
           {step < 3 && (
-            <div className={`w-12 h-1 mx-2 rounded ${
-              currentStep > step ? 'bg-emerald-500' : 'bg-slate-100'
-            }`} />
+            <div className={`w-12 h-1 mx-2 rounded-full overflow-hidden bg-surface-container`}>
+              <div className={`h-full bg-green-500 transition-all duration-500 ${currentStep > step ? 'w-full' : 'w-0'}`} />
+            </div>
           )}
         </div>
       ))}
@@ -237,10 +232,11 @@ export default function ConfirmReceipt() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
-      <div className="text-center space-y-2 mb-8">
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">ยืนยันรับพัสดุ</h1>
-        <p className="text-slate-500">ทำตามขั้นตอนเพื่อยืนยันการรับหรือส่งต่อพัสดุ</p>
+    <div className="max-w-2xl mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header Section */}
+      <div className="text-center space-y-2 mb-10">
+        <h1 className="font-display text-3xl font-bold text-primary tracking-tight">ยืนยันรับพัสดุ</h1>
+        <p className="text-sm text-on-surface-variant">ทำตามขั้นตอนเพื่อยืนยันการรับหรือส่งต่อพัสดุผ่านระบบ LogiTrack</p>
       </div>
 
       <StepIndicator />
@@ -248,89 +244,90 @@ export default function ConfirmReceipt() {
       {isLoading && (
         <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[100] flex flex-col items-center justify-center animate-in fade-in duration-300">
           <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-4">
-            <RefreshCw className="w-10 h-10 text-primary animate-spin" />
+            <span className="material-symbols-outlined text-5xl text-primary animate-spin">progress_activity</span>
           </div>
-          <p className="text-lg font-bold text-slate-900">กำลังบันทึกข้อมูล...</p>
-          <p className="text-slate-500 text-sm">กรุณารอสักครู่ ระบบกำลังประมวลผล</p>
+          <p className="text-lg font-bold text-primary font-display">กำลังบันทึกข้อมูล...</p>
+          <p className="text-on-surface-variant text-sm">กรุณารอสักครู่ ระบบกำลังประมวลผล</p>
         </div>
       )}
 
       {/* Step 1: Check Tracking ID */}
       {currentStep === 1 && (
-        <Card className="border-none shadow-xl rounded-3xl overflow-hidden animate-in slide-in-from-right-4 duration-300">
-          <CardHeader className="bg-slate-50/50 p-8 border-b border-slate-100 text-center">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-primary" />
+        <div className="bg-white border border-outline-variant rounded-3xl overflow-hidden shadow-xl animate-in slide-in-from-right-4 duration-500">
+          <div className="bg-surface-container-low/30 p-8 border-b border-outline-variant/10 text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
+              <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>search</span>
             </div>
-            <CardTitle>ระบุ Tracking ID</CardTitle>
-            <CardDescription>กรอกเลขที่พัสดุเพื่อเริ่มต้นทำรายการ</CardDescription>
-          </CardHeader>
-          <CardContent className="p-8 space-y-6">
+            <h2 className="font-display text-xl font-bold text-primary">ระบุ Tracking ID</h2>
+            <p className="text-xs text-on-surface-variant uppercase font-bold tracking-widest mt-1">กรอกเลขที่พัสดุเพื่อเริ่มต้นทำรายการ</p>
+          </div>
+          <div className="p-8 space-y-6">
             <div className="space-y-4">
               <div className="relative group">
-                <Input
+                <input
                   placeholder="เช่น TRK20260420001"
                   value={trackingId}
                   onChange={(e) => setTrackingId(e.target.value.toUpperCase())}
-                  className="h-14 text-lg font-mono tracking-widest pl-5 pr-14 rounded-2xl border-slate-200 focus:ring-primary/20 transition-all"
+                  className="w-full h-16 text-2xl font-mono tracking-[0.2em] pl-6 pr-14 rounded-2xl border-2 border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/5 outline-none transition-all text-primary placeholder:text-outline-variant placeholder:font-sans placeholder:text-lg placeholder:tracking-normal"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={handlePasteTrackingID}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-400 hover:text-primary hover:bg-slate-100 transition-all"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all"
+                  title="วางจากคลิปบอร์ด"
                 >
-                  <ClipboardPaste className="w-5 h-5" />
+                  <span className="material-symbols-outlined text-2xl">content_paste</span>
                 </button>
               </div>
 
               {checkedParcel && isDelivered && (
-                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-900 text-sm flex items-start gap-3">
-                  <span className="text-xl shrink-0">🚫</span>
+                <div className="p-4 bg-error-container/30 border border-error/10 rounded-2xl text-error text-sm flex items-start gap-3 animate-in shake duration-300">
+                  <span className="material-symbols-outlined text-xl">block</span>
                   <div>
-                    <p className="font-bold">พัสดุนี้ถูกส่งถึงที่หมายแล้ว</p>
+                    <p className="font-bold">พัสดุนี้ถูกจัดส่งถึงที่หมายแล้ว</p>
                     <p className="opacity-80">ไม่สามารถยืนยันซ้ำได้ กรุณาตรวจสอบ ID อีกครั้ง</p>
                   </div>
                 </div>
               )}
             </div>
 
-            <Button 
-              onClick={handleCheckParcel} 
-              disabled={isChecking || !trackingId || isDelivered} 
-              className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            <button
+              onClick={handleCheckParcel}
+              disabled={isChecking || !trackingId || isDelivered}
+              className="w-full group flex items-center justify-center gap-3 h-16 bg-primary text-white rounded-2xl font-display font-bold text-lg shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
             >
               {isChecking ? (
                 <>
-                  <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
                   กำลังตรวจสอบ...
                 </>
               ) : (
                 <>
-                  ตรวจสอบพัสดุ
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  ตรวจสอบข้อมูลพัสดุ
+                  <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </>
               )}
-            </Button>
-          </CardContent>
-        </Card>
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Step 2: Photo Evidence */}
       {currentStep === 2 && (
-        <Card className="border-none shadow-xl rounded-3xl overflow-hidden animate-in slide-in-from-right-4 duration-300">
-          <CardHeader className="bg-slate-50/50 p-8 border-b border-slate-100 text-center">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Camera className="w-8 h-8 text-primary" />
+        <div className="bg-white border border-outline-variant rounded-3xl overflow-hidden shadow-xl animate-in slide-in-from-right-4 duration-500">
+          <div className="bg-surface-container-low/30 p-8 border-b border-outline-variant/10 text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
+              <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>photo_camera</span>
             </div>
-            <CardTitle>ถ่ายรูปหลักฐาน</CardTitle>
-            <CardDescription>อัปโหลดรูปภาพพัสดุหรือหลักฐานการรับ</CardDescription>
-          </CardHeader>
-          <CardContent className="p-8 space-y-6">
+            <h2 className="font-display text-xl font-bold text-primary">ถ่ายรูปหลักฐาน</h2>
+            <p className="text-xs text-on-surface-variant uppercase font-bold tracking-widest mt-1">อัปโหลดรูปภาพพัสดุหรือหลักฐานการรับ</p>
+          </div>
+          <div className="p-8 space-y-6">
             {!photoPreview ? (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center cursor-pointer hover:border-primary hover:bg-slate-50 transition-all group"
+                className="border-2 border-dashed border-outline-variant rounded-3xl p-12 text-center cursor-pointer hover:border-primary hover:bg-surface-container-lowest transition-all group relative overflow-hidden"
               >
                 <input
                   ref={fileInputRef}
@@ -340,167 +337,356 @@ export default function ConfirmReceipt() {
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Camera className="w-10 h-10 text-slate-400 group-hover:text-primary" />
+                <div className="w-20 h-20 bg-surface-container rounded-3xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:bg-primary/5 transition-all">
+                  <span className="material-symbols-outlined text-4xl text-on-surface-variant group-hover:text-primary transition-colors">add_a_photo</span>
                 </div>
-                <p className="text-lg font-bold text-slate-700">คลิกเพื่อเปิดกล้อง / เลือกรูป</p>
-                <p className="text-slate-400 mt-2 text-sm">รูปภาพจะถูกปรับขนาดให้อัตโนมัติ</p>
+                <p className="text-lg font-bold text-primary font-display">คลิกเพื่อเปิดกล้อง / เลือกรูป</p>
+                <p className="text-on-surface-variant mt-2 text-sm">ระบบจะบีบอัดรูปภาพให้อัตโนมัติเพื่อประหยัดพื้นที่</p>
               </div>
             ) : (
-              <div className="relative rounded-3xl overflow-hidden border border-slate-100 shadow-inner group">
-                <img src={photoPreview} alt="Preview" className="w-full aspect-[4/3] object-cover" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                  <Button variant="secondary" className="rounded-xl font-bold" onClick={() => setPhotoPreview(null)}>
+              <div className="relative rounded-3xl overflow-hidden border border-outline-variant shadow-inner group aspect-video">
+                <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-[2px]">
+                  <button
+                    className="flex items-center gap-2 px-6 py-2.5 bg-white text-primary rounded-xl font-bold active:scale-95 transition-all shadow-lg"
+                    onClick={() => setPhotoPreview(null)}
+                  >
+                    <span className="material-symbols-outlined">restart_alt</span>
                     ถ่ายใหม่
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
 
             <div className="flex gap-4">
-              <Button variant="outline" onClick={() => setCurrentStep(1)} className="h-14 flex-1 rounded-2xl font-bold border-slate-200">
-                <ArrowLeft className="w-5 h-5 mr-2" /> ย้อนกลับ
-              </Button>
-              <Button 
-                onClick={() => setCurrentStep(3)} 
-                disabled={!photoPreview} 
-                className="h-14 flex-[2] rounded-2xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="flex items-center justify-center gap-2 h-14 flex-1 rounded-2xl font-display font-bold border-2 border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors"
               >
-                ถัดไป <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
+                <span className="material-symbols-outlined">arrow_back</span>
+                ย้อนกลับ
+              </button>
+              <button
+                onClick={() => setCurrentStep(3)}
+                disabled={!photoPreview}
+                className="flex items-center justify-center gap-2 h-14 flex-[2] bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+              >
+                ขั้นตอนถัดไป
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Step 3: Final Details & Confirm */}
       {currentStep === 3 && (
-        <Card className="border-none shadow-xl rounded-3xl overflow-hidden animate-in slide-in-from-right-4 duration-300">
-          <CardHeader className="bg-slate-50/50 p-8 border-b border-slate-100 text-center">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-8 h-8 text-primary" />
+        <div className="bg-white border border-outline-variant rounded-3xl overflow-hidden shadow-xl animate-in slide-in-from-right-4 duration-500">
+          <div className="bg-surface-container-low/30 p-8 border-b border-outline-variant/10 text-center">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
+              <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>fact_check</span>
             </div>
-            <CardTitle>ข้อมูลเพิ่มเติมและยืนยัน</CardTitle>
-            <CardDescription>ระบุรายละเอียดการรับพัสดุให้ครบถ้วน</CardDescription>
-          </CardHeader>
-          <CardContent className="p-8 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl text-sm">
-              <div className="flex items-center gap-2 text-slate-600">
-                <Package className="w-4 h-4" />
-                <span>Tracking ID: <b className="text-slate-900 font-mono">{trackingId}</b></span>
+            <h2 className="font-display text-xl font-bold text-primary">ข้อมูลเพิ่มเติมและยืนยัน</h2>
+            <p className="text-xs text-on-surface-variant uppercase font-bold tracking-widest mt-1">ระบุรายละเอียดการรับพัสดุให้ครบถ้วน</p>
+          </div>
+          <div className="p-8 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-surface-container-lowest border border-outline-variant p-5 rounded-2xl text-sm">
+              <div className="flex items-center gap-3 text-on-surface-variant">
+                <span className="material-symbols-outlined text-primary text-xl">barcode_scanner</span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 leading-none">Tracking ID</span>
+                  <span className="font-mono font-bold text-primary text-base leading-tight">{trackingId}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-slate-600">
-                <User className="w-4 h-4" />
-                <span>ผู้รับ: <b className="text-slate-900">{checkedParcel?.['ผู้รับ']}</b></span>
+              <div className="flex items-center gap-3 text-on-surface-variant">
+                <span className="material-symbols-outlined text-primary text-xl">person</span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 leading-none">ชื่อผู้รับต้นฉบับ</span>
+                  <span className="font-bold text-primary text-base leading-tight">{checkedParcel?.['ผู้รับ']}</span>
+                </div>
               </div>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-4">
-                <div className={`p-4 rounded-2xl border transition-all ${isForwarding ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100'}`}>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="isForwarding" checked={isForwarding} onCheckedChange={(v) => setIsForwarding(!!v)} className="w-5 h-5" />
-                    <label htmlFor="isForwarding" className="text-sm font-bold cursor-pointer select-none flex-1">ส่งต่อไปยัง</label>
+                <div className={`p-5 rounded-2xl border-2 transition-all duration-300 ${isForwarding ? 'bg-secondary-fixed/10 border-secondary-container' : 'bg-white border-outline-variant/30 hover:border-outline-variant'}`}>
+                  <div className="flex items-center justify-between cursor-pointer group" onClick={() => setIsForwarding(!isForwarding)}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isForwarding ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                        <span className="material-symbols-outlined text-2xl">fork_right</span>
+                      </div>
+                      <div>
+                        <p className="font-display font-bold text-primary">ส่งต่อพัสดุ</p>
+                        <p className="text-[11px] text-on-surface-variant opacity-60">ส่งพัสดุต่อให้พนักงานคนอื่นหรือรถเที่ยวถัดไป</p>
+                      </div>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isForwarding ? 'border-secondary bg-secondary' : 'border-outline-variant group-hover:border-primary'}`}>
+                      {isForwarding && <span className="material-symbols-outlined text-white text-base">check</span>}
+                    </div>
                   </div>
                   {isForwarding && (
-                    <div className="mt-4 space-y-3 animate-in fade-in duration-300">
-                      <Input placeholder="ชื่อผู้ส่งต่อ" value={forwardSender} onChange={(e) => setForwardSender(e.target.value)} className="rounded-xl border-amber-200 bg-white" />
-                      <div className="grid grid-cols-2 gap-2">
-                        <Select value={forwardFromBranch} onValueChange={setForwardFromBranch}>
-                          <SelectTrigger className="rounded-xl border-amber-200 bg-white">
-                            <SelectValue placeholder="จากสาขา" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {branches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                            <SelectItem value={OTHER_BRANCH_VALUE}>อื่นๆ</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Select value={forwardToBranch} onValueChange={setForwardToBranch}>
-                          <SelectTrigger className="rounded-xl border-amber-200 bg-white">
-                            <SelectValue placeholder="ไปสาขา" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {branches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                            <SelectItem value={OTHER_BRANCH_VALUE}>อื่นๆ</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    <div className="mt-5 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                      <div className="relative">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg">person</span>
+                        <input
+                          placeholder="ระบุชื่อพนักงานที่ส่งต่อ"
+                          value={forwardSender}
+                          onChange={(e) => setForwardSender(e.target.value)}
+                          className="w-full bg-white border border-outline-variant rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-secondary outline-none font-display"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="relative">
+                          <select
+                            value={forwardFromBranch}
+                            onChange={(e) => setForwardFromBranch(e.target.value)}
+                            className="w-full bg-white border border-outline-variant rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-secondary outline-none font-display appearance-none"
+                          >
+                            <option value="" disabled>จากสาขา</option>
+                            {branches.map(b => <option key={b} value={b}>{b}</option>)}
+                            <option value={OTHER_BRANCH_VALUE}>อื่นๆ</option>
+                          </select>
+                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg">flight_takeoff</span>
+                        </div>
+                        <div className="relative">
+                          <select
+                            value={forwardToBranch}
+                            onChange={(e) => setForwardToBranch(e.target.value)}
+                            className="w-full bg-white border border-outline-variant rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-secondary outline-none font-display appearance-none"
+                          >
+                            <option value="" disabled>ไปสาขา</option>
+                            {branches.map(b => <option key={b} value={b}>{b}</option>)}
+                            <option value={OTHER_BRANCH_VALUE}>อื่นๆ</option>
+                          </select>
+                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg">flight_land</span>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className={`p-4 rounded-2xl border transition-all ${isProxy ? 'bg-sky-50 border-sky-200' : 'bg-white border-slate-100'}`}>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="isProxy" checked={isProxy} onCheckedChange={(v) => setIsProxy(!!v)} className="w-5 h-5" />
-                    <label htmlFor="isProxy" className="text-sm font-bold cursor-pointer select-none flex-1">มีผู้รับแทน</label>
+                <div className={`p-5 rounded-2xl border-2 transition-all duration-300 ${isProxy ? 'bg-blue-50 border-blue-500' : 'bg-white border-outline-variant/30 hover:border-outline-variant'}`}>
+                  <div className="flex items-center justify-between cursor-pointer group" onClick={() => setIsProxy(!isProxy)}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isProxy ? 'bg-blue-600 text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                        <span className="material-symbols-outlined text-2xl">account_circle</span>
+                      </div>
+                      <div>
+                        <p className="font-display font-bold text-primary">มีผู้รับแทน</p>
+                        <p className="text-[11px] text-on-surface-variant opacity-60">กรณีบุคคลอื่นรับแทนผู้รับตัวจริง</p>
+                      </div>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isProxy ? 'border-blue-600 bg-blue-600' : 'border-outline-variant group-hover:border-primary'}`}>
+                      {isProxy && <span className="material-symbols-outlined text-white text-base">check</span>}
+                    </div>
                   </div>
                   {isProxy && (
-                    <div className="mt-4 animate-in fade-in duration-300">
-                      <Input placeholder="ระบุชื่อผู้รับแทน" value={proxyName} onChange={(e) => setProxyName(e.target.value)} className="rounded-xl border-sky-200 bg-white" />
+                    <div className="mt-5 animate-in slide-in-from-top-2 duration-300">
+                      <div className="relative">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg">person</span>
+                        <input
+                          placeholder="ระบุชื่อผู้รับแทน"
+                          value={proxyName}
+                          onChange={(e) => setProxyName(e.target.value)}
+                          className="w-full bg-white border border-outline-variant rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none font-display"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">หมายเหตุ (ไม่บังคับ)</label>
-                <Textarea placeholder="เช่น กล่องบุบนิดหน่อย, วางไว้ที่ป้อมยาม..." value={note} onChange={(e) => setNote(e.target.value)} className="rounded-2xl border-slate-200 min-h-[80px]" />
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-1">หมายเหตุเพิ่มเติม (ไม่บังคับ)</label>
+                <textarea
+                  placeholder="เช่น กล่องบุบนิดหน่อย, วางไว้ที่ป้อมยาม, ฝากไว้ที่เคาน์เตอร์..."
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  className="w-full bg-white border border-outline-variant rounded-2xl px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none font-display min-h-[100px] transition-all resize-none"
+                />
               </div>
             </div>
 
             <div className="flex gap-4">
-              <Button variant="outline" onClick={() => setCurrentStep(2)} className="h-14 flex-1 rounded-2xl font-bold border-slate-200">
-                ย้อนกลับ
-              </Button>
-              <Button 
-                onClick={() => setIsConfirmDialogOpen(true)} 
-                disabled={isLoading || (isForwarding && (!forwardSender || !forwardToBranch)) || (isProxy && !proxyName)}
-                className="h-14 flex-[2] rounded-2xl font-bold bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 active:scale-95 transition-all"
+              <button
+                onClick={() => setCurrentStep(2)}
+                className="flex items-center justify-center gap-2 h-14 flex-1 rounded-2xl font-display font-bold border-2 border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors"
               >
-                ยืนยันการทำรายการ <CheckCircle2 className="w-5 h-5 ml-2" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Success Modal */}
-      <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-3xl p-8 border-none shadow-2xl">
-          <DialogHeader className="text-center">
-            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-12 h-12 text-emerald-600" />
-            </div>
-            <DialogTitle className="text-2xl font-extrabold text-slate-900">ยืนยันข้อมูลอีกครั้ง?</DialogTitle>
-            <DialogDescription className="text-slate-500 pt-2">
-              ตรวจสอบข้อมูลทั้งหมดให้เรียบร้อยก่อนกดยืนยัน ข้อมูลจะไม่สามารถแก้ไขได้
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-6 space-y-4">
-            <div className="flex items-center justify-between py-3 border-b border-slate-50">
-              <span className="text-slate-400 font-medium">Tracking ID:</span>
-              <span className="font-mono font-bold text-primary">{trackingId}</span>
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-slate-50">
-              <span className="text-slate-400 font-medium">การดำเนินการ:</span>
-              <span className="font-bold">
-                {isForwarding ? '📦 ส่งต่อพัสดุ' : isProxy ? '👤 รับพัสดุแทน' : '✅ รับพัสดุสำเร็จ'}
-              </span>
+                ย้อนกลับ
+              </button>
+              <button
+                onClick={() => setIsConfirmDialogOpen(true)}
+                disabled={isLoading || (isForwarding && (!forwardSender || !forwardToBranch)) || (isProxy && !proxyName)}
+                className="flex items-center justify-center gap-2 h-14 flex-[2] bg-green-600 text-white rounded-2xl font-display font-bold shadow-lg shadow-green-200 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+              >
+                ยืนยันทำรายการ
+                <span className="material-symbols-outlined">verified</span>
+              </button>
             </div>
           </div>
-          <DialogFooter className="flex gap-3">
-            <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)} className="flex-1 rounded-xl h-12">ยกเลิก</Button>
-            <Button onClick={executeConfirm} disabled={isLoading} className="flex-1 rounded-xl h-12 bg-primary font-bold shadow-lg shadow-primary/20">
-              {isLoading ? (
-                <>
-                  <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                  กำลังประมวลผล...
-                </>
-              ) : (
-                'ใช่, ยืนยันข้อมูล'
-              )}
-            </Button>
-          </DialogFooter>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-3xl rounded-3xl p-0 border-none shadow-2xl bg-background overflow-hidden max-h-[90vh] md:max-h-[85vh]">
+          <div className="flex flex-col h-full max-h-[90vh] md:max-h-[85vh]">
+            {/* Header (Fixed) */}
+            <div className="bg-primary p-6 text-white text-center relative shrink-0">
+            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/20">
+              <span className="material-symbols-outlined text-4xl text-secondary-container">fact_check</span>
+            </div>
+            <DialogTitle className="text-2xl font-bold font-display">ตรวจสอบข้อมูล</DialogTitle>
+            <p className="text-primary-fixed-dim text-xs mt-1 uppercase tracking-wider font-medium">กรุณายืนยันความถูกต้องก่อนบันทึก</p>
+          </div>
+
+          <div className="p-4 md:p-6 space-y-6 bg-surface-container-lowest overflow-y-auto">
+            <div className="bg-white rounded-3xl border border-outline-variant/40 shadow-sm overflow-hidden">
+              
+              {/* Header Status Bar */}
+              <div className={`px-6 py-4 flex items-center gap-4 ${
+                  isForwarding ? 'bg-secondary/10' : 
+                  isProxy ? 'bg-blue-500/10' : 
+                  'bg-green-500/10'
+              }`}>
+                 <div className={`w-12 h-12 rounded-full flex items-center justify-center bg-white shadow-sm ${
+                     isForwarding ? 'text-secondary' : isProxy ? 'text-blue-600' : 'text-green-600'
+                 }`}>
+                    <span className="material-symbols-outlined text-2xl">
+                       {isForwarding ? 'fork_right' : isProxy ? 'account_circle' : 'check_circle'}
+                    </span>
+                 </div>
+                 <div>
+                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-0.5">สถานะการทำรายการ</p>
+                    <p className="text-xl font-bold font-display text-on-surface leading-none">
+                       {isForwarding ? 'ส่งต่อพัสดุ' : isProxy ? 'มีผู้รับแทน' : 'รับพัสดุเรียบร้อย'}
+                    </p>
+                 </div>
+              </div>
+
+              <div className="p-4 sm:p-6 space-y-6">
+                {/* Tracking ID */}
+                <div className="flex items-center justify-between border-b border-outline-variant/20 pb-4">
+                  <span className="text-sm font-bold text-on-surface-variant">Tracking ID</span>
+                  <span className="font-mono text-lg sm:text-xl font-black text-primary tracking-wider">{trackingId}</span>
+                </div>
+
+                {/* Conditional Details */}
+                {isForwarding && (
+                  <div className="bg-surface-container-low p-4 sm:p-5 rounded-2xl flex flex-col">
+                    <div className="flex justify-start mb-4">
+                      <div className="bg-white px-3 py-1.5 rounded-full text-[10px] font-bold text-primary shadow-sm border border-outline-variant/20 flex items-center gap-1 w-max">
+                         <span className="material-symbols-outlined text-sm">person</span>
+                         ผู้ส่งต่อ: {forwardSender || '-'}
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row items-center justify-between relative gap-3 sm:gap-0">
+                       <div className="w-full sm:flex-1 text-center z-10 flex flex-row sm:flex-col items-center justify-between sm:justify-center bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl border border-outline-variant/20 sm:border-none">
+                          <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest mb-0 sm:mb-1">จากสาขา</p>
+                          <p className="text-sm sm:text-base font-bold text-primary sm:bg-white sm:py-1 sm:px-2 rounded-lg sm:border sm:border-outline-variant/20">
+                             {forwardFromBranch === OTHER_BRANCH_VALUE ? customForwardFromBranch : forwardFromBranch}
+                          </p>
+                       </div>
+                       
+                       {/* Connecting Line (Desktop) */}
+                       <div className="hidden sm:flex flex-1 flex-col items-center justify-center px-2 relative z-0">
+                          <div className="w-full border-t-2 border-dashed border-outline-variant/60 absolute top-1/2 -translate-y-1/2" />
+                          <div className="bg-surface-container-low px-3 relative z-10 text-outline-variant">
+                             <span className="material-symbols-outlined text-3xl">local_shipping</span>
+                          </div>
+                       </div>
+
+                       {/* Arrow (Mobile) */}
+                       <div className="sm:hidden flex items-center justify-center w-full py-1 text-outline-variant">
+                          <span className="material-symbols-outlined">south</span>
+                       </div>
+
+                       <div className="w-full sm:flex-1 text-center z-10 flex flex-row sm:flex-col items-center justify-between sm:justify-center bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl border border-outline-variant/20 sm:border-none">
+                          <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest mb-0 sm:mb-1">ไปสาขา</p>
+                          <p className="text-sm sm:text-base font-bold text-primary sm:bg-white sm:py-1 sm:px-2 rounded-lg sm:border sm:border-outline-variant/20">
+                             {forwardToBranch === OTHER_BRANCH_VALUE ? customForwardToBranch : forwardToBranch}
+                          </p>
+                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {isProxy && (
+                  <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-500 shadow-sm">
+                       <span className="material-symbols-outlined">how_to_reg</span>
+                    </div>
+                    <div>
+                       <p className="text-[10px] text-blue-600/70 uppercase font-bold tracking-widest mb-1">ชื่อผู้รับแทน</p>
+                       <p className="text-lg font-bold text-blue-900 leading-none">{proxyName || '-'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {!isForwarding && !isProxy && (
+                  <div className="bg-green-50/50 p-5 rounded-2xl border border-green-100 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-500 shadow-sm">
+                       <span className="material-symbols-outlined">verified_user</span>
+                    </div>
+                    <div>
+                       <p className="text-[10px] text-green-600/70 uppercase font-bold tracking-widest mb-1">ชื่อผู้รับต้นฉบับ</p>
+                       <p className="text-lg font-bold text-green-900 leading-none">{checkedParcel?.['ผู้รับ'] || '-'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {note && (
+                  <div className="bg-surface-container-low/50 p-4 rounded-2xl border border-outline-variant/30">
+                    <div className="flex items-center gap-2 mb-2 text-on-surface-variant">
+                      <span className="material-symbols-outlined text-sm">edit_note</span>
+                      <p className="text-[10px] font-bold uppercase tracking-widest">หมายเหตุเพิ่มเติม</p>
+                    </div>
+                    <p className="text-sm text-on-surface italic">{note}</p>
+                  </div>
+                )}
+
+                {/* Photo Preview in Modal */}
+                {photoPreview && (
+                  <div className="h-40 w-full relative group rounded-2xl overflow-hidden border border-outline-variant/30">
+                    <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-3 left-3 flex items-center gap-2 text-white">
+                      <span className="material-symbols-outlined text-sm">photo_camera</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest">หลักฐานรูปภาพที่แนบ</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Footer (Fixed) */}
+          <div className="p-4 md:p-6 bg-surface-container-lowest border-t border-outline-variant/20 shrink-0">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setIsConfirmDialogOpen(false)}
+                className="flex-1 h-14 rounded-2xl font-display font-bold border-2 border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors text-base"
+              >
+                แก้ไข
+              </button>
+              <button
+                onClick={executeConfirm}
+                disabled={isLoading}
+                className="flex-[2] flex items-center justify-center gap-2 h-14 bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 text-base"
+              >
+                {isLoading ? (
+                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                ) : (
+                  <>
+                    ยืนยันรายการ
+                    <span className="material-symbols-outlined text-xl">verified</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

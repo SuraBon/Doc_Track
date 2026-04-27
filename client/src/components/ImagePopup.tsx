@@ -6,8 +6,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { ExternalLink, Image as ImageIcon } from 'lucide-react';
 
 interface ImagePopupProps {
   url: string;
@@ -33,31 +31,34 @@ export default function ImagePopup({ url, title = 'รูปภาพหลั�
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className={`gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 ${className}`}>
-          <ImageIcon className="w-4 h-4" />
-          คลิกเพื่อดู {title}
-        </Button>
+        <button className={`flex items-center gap-2.5 px-5 py-3 bg-surface-container-low text-primary hover:bg-surface-container rounded-2xl border border-outline-variant/30 font-display font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${className}`}>
+          <span className="material-symbols-outlined text-xl">image</span>
+          ดู{title}
+        </button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl w-[95vw] h-[85vh] flex flex-col p-0">
-        <DialogHeader className="px-4 py-3 border-b flex-none bg-muted/30">
-          <DialogTitle className="flex items-center justify-between text-base">
-            <span className="flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-muted-foreground" />
+      <DialogContent className="w-full sm:max-w-5xl h-[85vh] flex flex-col p-0 rounded-3xl overflow-hidden border-none shadow-2xl">
+        <DialogHeader className="px-6 py-4 border-b border-outline-variant/10 flex-none bg-primary text-white">
+          <DialogTitle className="flex items-center justify-between text-lg font-display font-black uppercase tracking-tight">
+            <span className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-2xl text-secondary">photo_camera</span>
               {title}
             </span>
-            <Button variant="ghost" size="sm" asChild className="mr-6">
-              <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 gap-2 font-medium">
-                <ExternalLink className="w-4 h-4" />
-                เปิดในแท็บใหม่
-              </a>
-            </Button>
+            <a 
+              href={url} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="mr-8 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors text-sm font-bold"
+            >
+              <span className="material-symbols-outlined text-lg">open_in_new</span>
+              เปิดในแท็บใหม่
+            </a>
           </DialogTitle>
         </DialogHeader>
-        <div className="flex-1 w-full relative bg-gray-100 flex items-center justify-center">
-          <div className="absolute flex flex-col items-center justify-center text-muted-foreground z-0 p-6 text-center">
-            <ImageIcon className="w-12 h-12 mb-4 opacity-20" />
-            <p>กำลังโหลดรูปภาพ...</p>
-            <p className="text-sm mt-2">หากรูปภาพไม่แสดง กรุณากดปุ่ม <b>"เปิดในแท็บใหม่"</b> ด้านบนขวา</p>
+        <div className="flex-1 w-full relative bg-surface-container flex items-center justify-center">
+          <div className="absolute flex flex-col items-center justify-center text-on-surface-variant/30 z-0 p-8 text-center max-w-xs">
+            <span className="material-symbols-outlined text-6xl mb-4 animate-pulse">cloud_download</span>
+            <p className="font-display font-bold text-lg text-primary/40">กำลังโหลดหลักฐาน...</p>
+            <p className="text-xs mt-3 leading-relaxed">หากพรีวิวไม่แสดงผลโดยอัตโนมัติ กรุณากดปุ่ม <b>"เปิดในแท็บใหม่"</b> ด้านบนขวาเพื่อดูต้นฉบับ</p>
           </div>
           {/* We use an iframe to safely preview the Google Drive file inside the dialog */}
           <iframe 

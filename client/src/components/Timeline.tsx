@@ -7,6 +7,7 @@
 import type { TimelineEvent } from '@/types/timeline';
 import { CheckCircle2, Circle, Clock, MapPin, Sparkles, Package, Truck, Home } from 'lucide-react';
 import ImagePopup from '@/components/ImagePopup';
+import { formatThaiDateTime } from '@/lib/dateUtils';
 
 interface TimelineProps {
   events: TimelineEvent[];
@@ -15,147 +16,166 @@ interface TimelineProps {
 
 export default function Timeline({ events, className = '' }: TimelineProps) {
   const isDelivered = events.some((event) => event.title.includes('ส่งถึงแล้ว'));
+  const currentEvent = events.find(e => e.status === 'current') || events[0];
+  const isTransit = currentEvent?.title.includes('จัดส่ง') || currentEvent?.title.includes('เดินทาง') || currentEvent?.title.includes('ส่งต่อ');
+  const isPending = currentEvent?.title.includes('รับพัสดุ') || currentEvent?.title.includes('เข้าระบบ');
+  
+  const headerStyle = isDelivered 
+    ? { icon: 'home_app_logo', color: 'bg-emerald-600', shadow: 'shadow-emerald-200', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200', text: 'จัดส่งสำเร็จเรียบร้อย', sub: 'พัสดุของคุณถูกจัดส่งถึงที่หมายแล้ว ขอบคุณที่ใช้บริการ', badgeText: 'Delivered' }
+    : isTransit
+      ? { icon: 'local_shipping', color: 'bg-blue-600', shadow: 'shadow-blue-200', badge: 'bg-blue-100 text-blue-800 border-blue-200', text: 'พัสดุกำลังเดินทาง', sub: 'พัสดุของคุณกำลังอยู่ระหว่างการจัดส่งไปยังปลายทาง', badgeText: 'In Transit' }
+      : { icon: 'pending_actions', color: 'bg-amber-500', shadow: 'shadow-amber-200', badge: 'bg-amber-100 text-amber-800 border-amber-200', text: 'รับพัสดุเข้าระบบ', sub: 'พัสดุของคุณถูกรับเข้าสู่ระบบและรอคิวจัดส่ง', badgeText: 'In Process' };
 
   const getStatusIcon = (status: TimelineEvent['status'], title: string) => {
-    const isMainStep = title.includes('สร้างรายการ') || title.includes('ส่งถึงแล้ว') || title.includes('รับพัสดุเรียบร้อย');
-
     switch (status) {
       case 'completed':
         return (
-          <div className="relative flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200">
-            <CheckCircle2 className="w-4 h-4 text-white" />
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white shadow-lg shadow-primary/20">
+            <span className="material-symbols-outlined text-lg font-bold">check</span>
           </div>
         );
       case 'current':
         return (
-          <div className="relative flex items-center justify-center w-6 h-6 rounded-full bg-sky-500 shadow-lg shadow-sky-200 animate-pulse">
-            <div className="absolute inset-0 rounded-full bg-sky-400 animate-ping opacity-25"></div>
-            {title.includes('ส่งต่อ') ? (
-              <Truck className="w-3.5 h-3.5 text-white" />
-            ) : (
-              <Circle className="w-3.5 h-3.5 text-white fill-current" />
-            )}
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-secondary text-primary shadow-lg shadow-secondary/30">
+            <div className="absolute inset-0 rounded-full bg-secondary animate-ping opacity-25"></div>
+            <span className="material-symbols-outlined text-lg font-bold">
+              {title.includes('ส่งต่อ') ? 'local_shipping' : 'radio_button_checked'}
+            </span>
           </div>
         );
       case 'pending':
         return (
-          <div className="relative flex items-center justify-center w-6 h-6 rounded-full bg-white border-2 border-slate-200">
-            <Circle className="w-3 h-3 text-slate-300" />
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-surface-container border-2 border-outline-variant">
+            <span className="material-symbols-outlined text-lg text-outline-variant">pending</span>
           </div>
         );
       default:
-        return <Circle className="w-6 h-6 text-gray-300" />;
+        return (
+          <div className="w-8 h-8 rounded-full bg-surface-container border border-outline-variant"></div>
+        );
     }
   };
 
-  const getCardStyle = (status: TimelineEvent['status']) => {
+  const getCardStyle = (status: TimelineEvent['status'], title: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-white border-slate-100 hover:border-emerald-200 transition-all duration-300';
+        return 'bg-white border-outline-variant/30 hover:border-primary/20 hover:bg-surface-container-low/20';
       case 'current':
-        return 'bg-white border-sky-200 shadow-md shadow-sky-50 ring-1 ring-sky-50';
+        const isTransit = title.includes('จัดส่ง') || title.includes('เดินทาง');
+        const colorClass = isTransit ? 'border-blue-500 shadow-blue-500/5 ring-blue-500/10' : 'border-secondary shadow-secondary/5 ring-secondary/10';
+        return `bg-white ${colorClass} shadow-xl ring-1`;
       case 'pending':
-        return 'bg-slate-50/50 border-slate-100 opacity-75';
+        return 'bg-surface-container-lowest border-outline-variant/20 opacity-70';
       default:
-        return 'bg-white border-slate-100';
+        return 'bg-white border-outline-variant/30';
     }
   };
 
   const getLineStyle = (status: TimelineEvent['status'], nextStatus?: TimelineEvent['status']) => {
-    if (status === 'completed' && nextStatus === 'completed') return 'bg-emerald-400';
-    if (status === 'completed' && nextStatus === 'current') return 'bg-gradient-to-b from-emerald-400 to-sky-400';
-    if (status === 'current') return 'bg-gradient-to-b from-sky-400 to-slate-200';
-    return 'bg-slate-200';
+    if (status === 'completed' && nextStatus === 'completed') return 'bg-primary';
+    if (status === 'completed' && nextStatus === 'current') return 'bg-gradient-to-b from-primary to-secondary';
+    if (status === 'current') return 'bg-gradient-to-b from-secondary to-outline-variant';
+    return 'bg-outline-variant';
   };
 
   return (
     <div className={`relative px-1 ${className}`}>
       {/* Header Summary */}
-      <div className="mb-8 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm flex items-center gap-4">
-        <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${isDelivered ? 'bg-emerald-50 text-emerald-600' : 'bg-sky-50 text-sky-600'}`}>
-          {isDelivered ? <Home className="w-6 h-6" /> : <Truck className="w-6 h-6 animate-bounce" />}
+      <div className="mb-10 rounded-3xl border border-outline-variant/20 bg-white p-6 shadow-md flex items-center gap-6">
+        <div className={`flex items-center justify-center w-16 h-16 rounded-2xl ${headerStyle.color} text-white ${headerStyle.shadow} shadow-lg`}>
+          <span className="material-symbols-outlined text-3xl">
+            {headerStyle.icon}
+          </span>
         </div>
         <div className="flex-1">
-          <h3 className="font-bold text-slate-900 text-base leading-tight">
-            {isDelivered ? 'พัสดุจัดส่งถึงที่หมายแล้ว' : 'พัสดุกำลังเดินทางไปยังปลายทาง'}
+          <h3 className="font-display font-black text-primary text-xl leading-tight uppercase tracking-tight">
+            {headerStyle.text}
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {isDelivered ? 'การเดินทางสิ้นสุดลง ขอบคุณที่ใช้บริการ' : 'พัสดุของคุณกำลังได้รับการดูแลอย่างดี'}
+          <p className="text-sm text-on-surface-variant/70 mt-1 font-medium">
+            {headerStyle.sub}
           </p>
         </div>
-        <div className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-md font-bold ${isDelivered ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'
-          }`}>
-          {isDelivered ? 'Delivered' : 'On The Way'}
+        <div className={`text-[11px] uppercase tracking-widest px-4 py-2 rounded-full font-black shadow-sm border ${headerStyle.badge}`}>
+          {headerStyle.badgeText}
         </div>
       </div>
 
       <div className="relative space-y-0">
         {/* Main Continuous Vertical Line */}
-        <div className="absolute left-[11px] top-4 bottom-4 w-[2px] bg-slate-100 rounded-full" />
+        <div className="absolute left-[15px] top-4 bottom-4 w-[2px] bg-outline-variant/20 rounded-full" />
 
         {events.map((event, index) => {
           const nextEvent = events[index + 1];
           return (
             <div
               key={event.id}
-              className="flex gap-6 pb-8 relative group"
+              className="flex gap-8 pb-10 relative group"
             >
               {/* Dynamic Line Connector */}
               {index < events.length - 1 && (
-                <div className={`absolute left-[11px] top-6 w-[2px] bottom-0 z-0 transition-colors duration-500 ${getLineStyle(event.status, nextEvent?.status)}`} />
+                <div className={`absolute left-[15px] top-8 w-[2px] bottom-0 z-0 transition-colors duration-500 ${getLineStyle(event.status, nextEvent?.status)}`} />
               )}
 
               {/* Status Icon Container */}
-              <div className="relative z-10 flex-shrink-0 pt-0.5">
+              <div className="relative z-10 flex-shrink-0">
                 {getStatusIcon(event.status, event.title)}
               </div>
 
               {/* Event Card */}
-              <div className={`flex-1 p-5 rounded-2xl border transition-all duration-300 ${getCardStyle(event.status)}`}>
+              <div className={`flex-1 p-6 rounded-3xl border transition-all duration-300 ${getCardStyle(event.status, event.title)}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className={`font-bold text-base leading-tight ${event.status === 'pending' ? 'text-slate-400' : 'text-slate-900'}`}>
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                      <h4 className={`font-display font-black text-lg leading-tight ${event.status === 'pending' ? 'text-on-surface-variant/40' : 'text-primary'}`}>
                         {event.title}
                       </h4>
                       {event.status === 'current' && (
-                        <span className="flex h-2 w-2 rounded-full bg-sky-500 animate-ping" />
+                        <div className="flex gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-secondary animate-ping" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
+                        </div>
                       )}
                     </div>
                     {event.description && (
-                      <p className={`text-sm mt-1.5 leading-relaxed ${event.status === 'pending' ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <p className={`text-sm leading-relaxed font-medium ${event.status === 'pending' ? 'text-on-surface-variant/40' : 'text-on-surface-variant/70'}`}>
                         {event.description}
                       </p>
                     )}
                   </div>
                   {event.status === 'current' && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 text-[11px] font-bold border border-sky-100 uppercase tracking-tight">
-                      <Sparkles className="w-3 h-3" />
-                      Active
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black border uppercase tracking-widest ${
+                      event.title.includes('จัดส่ง') || event.title.includes('เดินทาง') 
+                        ? 'bg-blue-50 text-blue-700 border-blue-100' 
+                        : 'bg-secondary/10 text-primary border-secondary/20'
+                    }`}>
+                      <span className="material-symbols-outlined text-sm">
+                        {event.title.includes('จัดส่ง') || event.title.includes('เดินทาง') ? 'local_shipping' : 'auto_awesome'}
+                      </span>
+                      {event.title.includes('จัดส่ง') || event.title.includes('เดินทาง') ? 'In Transit' : 'In Process'}
                     </span>
                   )}
                 </div>
 
                 {/* Metadata Row */}
-                <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-50 pt-3">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                    <Clock className="w-3.5 h-3.5" />
-                    <time className="font-medium tracking-tight">{event.timestamp || '-'}</time>
+                <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-outline-variant/10 pt-4">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-on-surface-variant/60">
+                    <span className="material-symbols-outlined text-base">schedule</span>
+                    <time className="tracking-tight uppercase">{event.timestamp ? formatThaiDateTime(event.timestamp) : '-'}</time>
                   </div>
                   {event.location && (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                      <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                      <span className="font-medium tracking-tight text-slate-500">{event.location}</span>
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-on-surface-variant/40">
+                      <span className="material-symbols-outlined text-base text-secondary">location_on</span>
+                      <span className="tracking-tight text-on-surface-variant/60">{event.location}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Proof Image */}
                 {event.imageUrl && (
-                  <div className="mt-5 p-1 bg-slate-50 rounded-xl inline-block border border-slate-100 overflow-hidden group/img">
+                  <div className="mt-6 p-1 bg-surface-container-low rounded-2xl inline-block border border-outline-variant/30 overflow-hidden group/img transition-transform hover:scale-[1.02]">
                     <div className="relative">
-                      <ImagePopup url={event.imageUrl} />
-                      <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none" />
+                      <ImagePopup url={event.imageUrl} className="rounded-xl overflow-hidden" />
+                      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/img:opacity-100 transition-opacity pointer-events-none" />
                     </div>
                   </div>
                 )}
