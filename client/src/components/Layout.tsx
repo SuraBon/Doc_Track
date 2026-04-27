@@ -15,10 +15,10 @@ const Layout: React.FC<LayoutProps> = ({
   const { parcels } = useParcelStore();
   const hasNotifications = parcels && parcels.length > 0;
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: "dashboard" },
-    { id: "create", label: "Create Parcel", icon: "add_box" },
-    { id: "confirm", label: "Confirm Receipt", icon: "photo_camera" },
-    { id: "track", label: "Track Shipments", icon: "location_searching" },
+    { id: "dashboard", label: "ภาพรวมระบบ", icon: "dashboard" },
+    { id: "create", label: "สร้างรายการใหม่", icon: "add_box" },
+    { id: "confirm", label: "ยืนยันการรับพัสดุ", icon: "photo_camera" },
+    { id: "track", label: "ติดตามสถานะ", icon: "location_searching" },
   ];
 
   return (
@@ -69,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({
         <div className="mt-auto space-y-1 pt-4 border-t border-white/10">
           <a className="flex items-center gap-3 px-3 py-2.5 text-primary-fixed-dim hover:text-white font-display text-sm font-semibold cursor-pointer active:opacity-80 hover:bg-white/10 transition-all">
             <span className="material-symbols-outlined">contact_support</span>
-            Support
+            ติดต่อช่วยเหลือ
           </a>
         </div>
       </aside>
@@ -84,7 +84,7 @@ const Layout: React.FC<LayoutProps> = ({
               </span>
               <input
                 className="w-full bg-surface-container-low border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                placeholder="Search shipments, assets or IDs..."
+                placeholder="ค้นหาพัสดุ หรือ หมายเลขติดตาม..."
                 type="text"
               />
             </div>
