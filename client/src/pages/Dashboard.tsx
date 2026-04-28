@@ -332,11 +332,11 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-primary text-white font-display text-[10px] uppercase tracking-widest">
-                  <th className="px-6 py-4 font-black rounded-tl-xl">Tracking ID</th>
-                  <th className="px-6 py-4 font-black">Sender & Receiver</th>
-                  <th className="px-6 py-4 font-black">Date & Time</th>
-                  <th className="px-6 py-4 font-black">Status</th>
-                  <th className="px-6 py-4 font-black text-right rounded-tr-xl">Actions</th>
+                  <th className="px-4 py-4 font-black rounded-tl-xl">Tracking ID</th>
+                  <th className="px-4 py-4 font-black">Sender & Receiver</th>
+                  <th className="px-4 py-4 font-black">Date & Time</th>
+                  <th className="px-4 py-4 font-black">Status</th>
+                  <th className="px-4 py-4 font-black text-right rounded-tr-xl">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/10 text-sm">
@@ -346,7 +346,7 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
                     className="hover:bg-surface-container-low/30 transition-colors group cursor-pointer"
                     onClick={() => handleRowClick(parcel)}
                   >
-                    <td className="px-6 py-4">
+                    <td className="pl-6 pr-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-primary bg-surface-container px-2 py-1 rounded text-xs font-medium">{parcel.TrackingID}</span>
                         <button 
@@ -357,7 +357,7 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
                         </button>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] font-bold text-on-surface-variant/60">FROM:</span>
@@ -369,16 +369,16 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-on-surface-variant font-medium">
+                    <td className="px-4 py-3 text-on-surface-variant font-medium">
                       <div className="flex flex-col">
                         <span>{formatThaiDate(parcel['วันที่สร้าง'])}</span>
                         <span className="text-[10px] opacity-60 font-mono">{parcel['วันที่สร้าง'].split(' ')[1]}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <StatusBadge status={parcel['สถานะ']} />
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-3 text-right">
                       <button className="text-primary font-bold hover:underline text-xs">View Details</button>
                     </td>
                   </tr>
