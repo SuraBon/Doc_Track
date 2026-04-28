@@ -5,7 +5,6 @@
  */
 
 import type { TimelineEvent } from '@/types/timeline';
-import { CheckCircle2, Circle, Clock, MapPin, Sparkles, Package, Truck, Home } from 'lucide-react';
 import ImagePopup from '@/components/ImagePopup';
 import { formatThaiDateTime } from '@/lib/dateUtils';
 
@@ -18,7 +17,6 @@ export default function Timeline({ events, className = '' }: TimelineProps) {
   const isDelivered = events.some((event) => event.title.includes('ส่งถึงแล้ว'));
   const currentEvent = events.find(e => e.status === 'current') || events[0];
   const isTransit = currentEvent?.title.includes('จัดส่ง') || currentEvent?.title.includes('เดินทาง') || currentEvent?.title.includes('ส่งต่อ');
-  const isPending = currentEvent?.title.includes('รับพัสดุ') || currentEvent?.title.includes('เข้าระบบ');
   
   const headerStyle = isDelivered 
     ? { icon: 'home_app_logo', color: 'bg-emerald-600', shadow: 'shadow-emerald-200', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200', text: 'จัดส่งสำเร็จเรียบร้อย', sub: 'พัสดุของคุณถูกจัดส่งถึงที่หมายแล้ว ขอบคุณที่ใช้บริการ', badgeText: 'Delivered' }

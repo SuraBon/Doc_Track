@@ -1,15 +1,8 @@
-import { cn } from "@/lib/utils";
-import { AlertTriangle, RotateCcw } from "lucide-react";
-import { Component, ReactNode } from "react";
+import { cn } from '@/lib/utils';
+import { Component, type ReactNode } from 'react';
 
-interface Props {
-  children: ReactNode;
-}
-
-interface State {
-  hasError: boolean;
-  error: Error | null;
-}
+interface Props  { children: ReactNode; }
+interface State  { hasError: boolean; error: Error | null; }
 
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
@@ -22,30 +15,27 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error) {
-    console.error("Unhandled application error:", error);
+    console.error('Unhandled application error:', error);
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="flex items-center justify-center min-h-screen p-8 bg-background">
-          <div className="flex flex-col items-center w-full max-w-2xl p-8">
-            <AlertTriangle
-              size={48}
-              className="text-destructive mb-6 flex-shrink-0"
-            />
+          <div className="flex flex-col items-center w-full max-w-2xl p-8 text-center">
+            <span className="material-symbols-outlined text-5xl text-error mb-6">error</span>
+            <h2 className="text-xl font-bold text-primary mb-4">เกิดข้อผิดพลาดที่ไม่คาดคิด</h2>
 
-            <h2 className="text-xl mb-4">An unexpected error occurred.</h2>
-
-            {import.meta.env.DEV && (
-              <div className="p-4 w-full rounded bg-muted overflow-auto mb-6">
-                <pre className="text-sm text-muted-foreground whitespace-break-spaces">
-                  {this.state.error?.stack}
+            {import.meta.env.DEV && this.state.error && (
+              <div className="p-4 w-full rounded-xl bg-surface-container overflow-auto mb-6 text-left">
+                <pre className="text-xs text-on-surface-variant whitespace-pre-wrap">
+                  {this.state.error.stack}
                 </pre>
               </div>
             )}
+
             {!import.meta.env.DEV && (
-              <p className="text-sm text-muted-foreground mb-6 text-center">
+              <p className="text-sm text-on-surface-variant mb-6">
                 ระบบขัดข้องชั่วคราว กรุณารีเฟรชหน้าอีกครั้ง หากยังพบปัญหาให้ติดต่อผู้ดูแลระบบ
               </p>
             )}
@@ -53,13 +43,13 @@ class ErrorBoundary extends Component<Props, State> {
             <button
               onClick={() => window.location.reload()}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg",
-                "bg-primary text-primary-foreground",
-                "hover:opacity-90 cursor-pointer"
+                'flex items-center gap-2 px-5 py-2.5 rounded-xl',
+                'bg-primary text-white font-bold',
+                'hover:opacity-90 transition-opacity',
               )}
             >
-              <RotateCcw size={16} />
-              Reload Page
+              <span className="material-symbols-outlined text-lg">refresh</span>
+              รีโหลดหน้า
             </button>
           </div>
         </div>

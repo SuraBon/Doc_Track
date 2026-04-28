@@ -1,6 +1,5 @@
 /**
- * Parcel Service
- * ฟังก์ชันสำหรับเรียก Google Apps Script API
+ * Parcel Service — Google Apps Script API client
  */
 
 import type {
@@ -10,96 +9,98 @@ import type {
   GetParcelsResponse,
   GetParcelPayload,
   GetParcelResponse,
-  ExportSummaryResponse,
   ConfirmReceiptPayload,
   ConfirmReceiptResponse,
+  ExportSummaryResponse,
   ParcelSummary,
   Parcel,
 } from '@/types/parcel';
 import { applyDerivedStatus, applyDerivedStatuses } from './parcelStatus';
 
-const GAS_URL = import.meta.env.VITE_GAS_URL || '';
-const GAS_API_KEY = import.meta.env.VITE_GAS_API_KEY || '';
-const LEGACY_DEFAULT_BRANCHES = [
-  'ศูนย์ใหญ่บางนา',
-  'มหาชัย',
-  'ศาลายา',
-  'กาญจนา',
-  'เซ็นทรัลพระราม 2',
-  'เรียบด่วน',
-  'เดอะมอลล์บางกะปิ',
-  'มีนบุรี',
-];
-const DEFAULT_BRANCHES = [
-  'MS',
-  'พระประแดง',
-  'บางนา',
-  'มีนบุรี',
-  'เลียบด่วน',
-  'เดอะมอลล์บางกะปิ',
-  'วิภาวดี',
-  'พิบูลสงคราม',
-  'เดอะมอลล์บางแค',
-  'มหาชัย',
-  'ศาลายา',
-  'กาญจนา',
-  'เซ็นทรัล พระราม 2',
-];
-const CONFIG_UPDATED_EVENT = 'parcel-config-updated';
+const GAS_URL     = import.meta.env.VITE_GAS_URL     as string | undefined ?? '';
+const GAS_API_KEY = import.meta.env.VITE_GAS_API_KEY as string | undefined ?? '';
 
-export function getGasUrl() {
-  return GAS_URL;
+// ── Branch list ──────────────────────────────────────────────────────────────
+
+const DEFAULT_BRANCHES = [
+  'MS', 'พระประแดง', 'บางนา', 'มีนบุรี', 'เลียบด่วน',
+  'เดอะมอลล์บางกะปิ', 'วิภาวดี', 'พิบูลสงคราม', 'เดอะมอลล์บางแค',
+  'มหาชัย', 'ศาลายา', 'กาญจนา', 'เซ็นทรัล พระราม 2',
+];
+
+// Legacy branch list that was shipped in an earlier version — treat as stale
+const LEGACY_BRANCHES = [
+  'ศูนย์ใหญ่บางนา', 'มหาชัย', 'ศาลายา', 'กาญจนา',
+  'เซ็นทรัลพระราม 2', 'เรียบด่วน', 'เดอะมอลล์บางกะปิ', 'มีนบุรี',
+];
+
+function isLegacyBranchList(list: string[]): boolean {
+  return (
+    list.length === LEGACY_BRANCHES.length &&
+    list.every((b, i) => b === LEGACY_BRANCHES[i])
+  );
 }
 
-const storedBranches = JSON.parse(localStorage.getItem('branches') || 'null') as string[] | null;
-const isLegacyBranches =
-  Array.isArray(storedBranches) &&
-  storedBranches.length === LEGACY_DEFAULT_BRANCHES.length &&
-  storedBranches.every((branch, index) => branch === LEGACY_DEFAULT_BRANCHES[index]);
+const storedBranches = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('branches') ?? 'null') as string[] | null;
+  } catch {
+    return null;
+  }
+})();
 
-let BRANCHES = !storedBranches || isLegacyBranches ? DEFAULT_BRANCHES : storedBranches;
+let BRANCHES: string[] =
+  !storedBranches || isLegacyBranchList(storedBranches)
+    ? DEFAULT_BRANCHES
+    : storedBranches;
 
-export function setBranches(branches: string[]) {
+const CONFIG_UPDATED_EVENT = 'parcel-config-updated';
+
+export function getBranches(): string[] {
+  return BRANCHES;
+}
+
+export function setBranches(branches: string[]): void {
   BRANCHES = branches;
   localStorage.setItem('branches', JSON.stringify(branches));
   window.dispatchEvent(new Event(CONFIG_UPDATED_EVENT));
 }
 
-export function getBranches() {
-  return BRANCHES;
-}
-
-export function isConfigured() {
+export function isConfigured(): boolean {
   return !!GAS_URL && BRANCHES.length > 0;
 }
 
-export function onConfigUpdated(listener: () => void) {
+export function getGasUrl(): string {
+  return GAS_URL;
+}
+
+export function onConfigUpdated(listener: () => void): () => void {
   window.addEventListener(CONFIG_UPDATED_EVENT, listener);
   return () => window.removeEventListener(CONFIG_UPDATED_EVENT, listener);
 }
 
-async function callAPI<T>(payload: any): Promise<T | null> {
+// ── Internal API helper ──────────────────────────────────────────────────────
+
+async function callAPI<T>(payload: object): Promise<T> {
   if (!GAS_URL) {
     throw new Error('กรุณาตั้งค่า Google Apps Script URL ก่อน');
   }
 
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ ...payload, apiKey: GAS_API_KEY }),
-      headers: { 'Content-Type': 'text/plain' },
-    });
+  const response = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, apiKey: GAS_API_KEY }),
+    // GAS requires text/plain to avoid CORS preflight
+    headers: { 'Content-Type': 'text/plain' },
+  });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
+
+  return response.json() as Promise<T>;
 }
+
+// ── Public API ───────────────────────────────────────────────────────────────
 
 export async function createParcel(
   senderName: string,
@@ -108,90 +109,92 @@ export async function createParcel(
   receiverBranch: string,
   docType: string,
   description?: string,
-  note?: string
+  note?: string,
 ): Promise<CreateParcelResponse> {
   const payload: CreateParcelPayload = {
     action: 'createParcel',
-    senderName,
-    senderBranch,
-    receiverName,
-    receiverBranch,
-    docType,
-    description,
-    note,
+    senderName, senderBranch, receiverName, receiverBranch, docType, description, note,
   };
-
-  const response = await callAPI<any>(payload);
-  if (response) {
+  try {
+    const res = await callAPI<Record<string, unknown>>(payload);
     return {
-      success: response.success,
-      trackingID: response.trackingID || response.trackingId,
-      error: response.error,
+      success: Boolean(res.success),
+      trackingID: (res.trackingID ?? res.trackingId) as string | undefined,
+      error: res.error as string | undefined,
     };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
+    return { success: false, error: message };
   }
-  return { success: false };
 }
 
-export async function getParcels(status: string = 'ทั้งหมด'): Promise<GetParcelsResponse> {
-  const payload: GetParcelsPayload = {
-    action: 'getParcels',
-    status,
-  };
-
-  const response = await callAPI<GetParcelsResponse>(payload);
-  if (response && response.success && response.parcels) {
-    response.parcels = applyDerivedStatuses(response.parcels);
-    if (status !== 'ทั้งหมด') {
-      response.parcels = response.parcels.filter((p) => p['สถานะ'] === status);
+export async function getParcels(status = 'ทั้งหมด'): Promise<GetParcelsResponse> {
+  const payload: GetParcelsPayload = { action: 'getParcels', status };
+  try {
+    const res = await callAPI<GetParcelsResponse>(payload);
+    if (res.success && Array.isArray(res.parcels)) {
+      let parcels = applyDerivedStatuses(res.parcels);
+      if (status !== 'ทั้งหมด') {
+        parcels = parcels.filter(p => p['สถานะ'] === status);
+      }
+      return { success: true, parcels };
     }
-    return response;
+    return { success: false, parcels: [], error: res.error };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
+    return { success: false, parcels: [], error: message };
   }
-  return { success: false, parcels: [] };
 }
 
 export async function getParcel(trackingID: string): Promise<GetParcelResponse> {
-  const payload: GetParcelPayload = {
-    action: 'getParcel',
-    trackingID,
-  };
-
-  const response = await callAPI<GetParcelResponse>(payload);
-  if (response && response.success && response.parcel) {
-    response.parcel = applyDerivedStatus(response.parcel);
-    return response;
+  const payload: GetParcelPayload = { action: 'getParcel', trackingID };
+  try {
+    const res = await callAPI<GetParcelResponse>(payload);
+    if (res.success && res.parcel) {
+      return { success: true, parcel: applyDerivedStatus(res.parcel) };
+    }
+    return { success: false, error: res.error };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
+    return { success: false, error: message };
   }
-  return { success: false };
-}
-
-export async function exportSummary(): Promise<ParcelSummary | null> {
-  const payload = { action: 'exportSummary' };
-
-  const response = await callAPI<ExportSummaryResponse>(payload);
-  return response?.summary || null;
 }
 
 export async function confirmReceipt(
   trackingID: string,
   photoUrl: string,
-  note?: string
+  note?: string,
 ): Promise<ConfirmReceiptResponse> {
-  const payload: ConfirmReceiptPayload = {
-    action: 'confirmReceipt',
-    trackingID,
-    photoUrl,
-    note,
-  };
-
-  return (await callAPI<ConfirmReceiptResponse>(payload)) || { success: false };
+  const payload: ConfirmReceiptPayload = { action: 'confirmReceipt', trackingID, photoUrl, note };
+  try {
+    return await callAPI<ConfirmReceiptResponse>(payload);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
+    return { success: false, error: message };
+  }
 }
 
 export async function searchParcels(query: string): Promise<Parcel[]> {
-  const response = await callAPI<{ success: boolean; parcels?: Parcel[] }>({
-    action: 'searchParcels',
-    query,
-  });
-  if (response?.success && response.parcels) {
-    return applyDerivedStatuses(response.parcels);
+  try {
+    const res = await callAPI<{ success: boolean; parcels?: Parcel[] }>({
+      action: 'searchParcels',
+      query,
+    });
+    if (res.success && Array.isArray(res.parcels)) {
+      return applyDerivedStatuses(res.parcels);
+    }
+    return [];
+  } catch {
+    return [];
   }
-  return [];
+}
+
+/** Fetches a raw summary from the backend (used as a fallback). */
+export async function exportSummary(): Promise<ParcelSummary | null> {
+  try {
+    const res = await callAPI<ExportSummaryResponse>({ action: 'exportSummary' });
+    return res.summary ?? null;
+  } catch {
+    return null;
+  }
 }

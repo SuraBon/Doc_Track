@@ -14,7 +14,7 @@ const DOC_TYPES = ['เอกสาร', 'พัสดุ'];
 const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
 
 export default function CreateParcel() {
-  const { createParcel, error } = useParcelStore();
+  const { createParcel } = useParcelStore();
   const branches = getBranches();
 
   const [formData, setFormData] = useState({
@@ -87,7 +87,7 @@ export default function CreateParcel() {
         setCustomReceiverBranch('');
         setCustomDocType('');
       } else {
-        toast.error(error || 'ไม่สามารถสร้างรายการได้');
+        toast.error('ไม่สามารถสร้างรายการได้');
       }
     } finally {
       setIsLoading(false);
@@ -106,23 +106,25 @@ export default function CreateParcel() {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-primary mb-1">สร้างรายการใหม่</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-black text-primary mb-0.5">สร้างรายการใหม่</h1>
           <p className="text-xs sm:text-sm text-on-surface-variant">กรอกข้อมูลรายละเอียดของพัสดุหรือเอกสารเพื่อเริ่มต้นการจัดส่ง</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Sender Section */}
-          <div className="bg-white border border-outline-variant rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            <div className="bg-surface-container-low/30 p-6 border-b border-outline-variant/10">
+          <div className="bg-white/90 backdrop-blur-sm border border-outline-variant/40 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <div className="p-5 border-b border-outline-variant/10"
+              style={{ background: 'linear-gradient(135deg, rgba(9,20,38,0.04) 0%, rgba(9,20,38,0.01) 100%)' }}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                  <span className="material-symbols-outlined">person</span>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-sm"
+                  style={{ background: 'linear-gradient(135deg, #091426 0%, #1e3a5f 100%)' }}>
+                  <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>
                 </div>
                 <div>
-                  <h2 className="font-display font-bold text-primary">ข้อมูลผู้ส่ง</h2>
-                  <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">รายละเอียดต้นทาง</p>
+                  <h2 className="font-display font-bold text-primary text-sm">ข้อมูลผู้ส่ง</h2>
+                  <p className="text-[10px] text-on-surface-variant/50 uppercase font-bold tracking-wider">รายละเอียดต้นทาง</p>
                 </div>
               </div>
             </div>
@@ -171,15 +173,17 @@ export default function CreateParcel() {
           </div>
 
           {/* Receiver Section */}
-          <div className="bg-white border border-outline-variant rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            <div className="bg-surface-container-low/30 p-6 border-b border-outline-variant/10">
+          <div className="bg-white/90 backdrop-blur-sm border border-outline-variant/40 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <div className="p-5 border-b border-outline-variant/10"
+              style={{ background: 'linear-gradient(135deg, rgba(133,83,0,0.05) 0%, rgba(133,83,0,0.01) 100%)' }}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-secondary-container/10 rounded-xl text-secondary">
-                  <span className="material-symbols-outlined">location_on</span>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-sm"
+                  style={{ background: 'linear-gradient(135deg, #855300 0%, #fea619 100%)' }}>
+                  <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
                 </div>
                 <div>
-                  <h2 className="font-display font-bold text-primary">ข้อมูลผู้รับ</h2>
-                  <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">รายละเอียดปลายทาง</p>
+                  <h2 className="font-display font-bold text-primary text-sm">ข้อมูลผู้รับ</h2>
+                  <p className="text-[10px] text-on-surface-variant/50 uppercase font-bold tracking-wider">รายละเอียดปลายทาง</p>
                 </div>
               </div>
             </div>
@@ -229,15 +233,17 @@ export default function CreateParcel() {
         </div>
 
         {/* Parcel Details */}
-        <div className="bg-white border border-outline-variant rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-          <div className="bg-surface-container-low/30 p-6 border-b border-outline-variant/10">
+        <div className="bg-white/90 backdrop-blur-sm border border-outline-variant/40 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+          <div className="p-5 border-b border-outline-variant/10"
+            style={{ background: 'linear-gradient(135deg, rgba(0,25,14,0.04) 0%, rgba(0,25,14,0.01) 100%)' }}>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-tertiary-fixed/30 rounded-xl text-tertiary-container">
-                <span className="material-symbols-outlined">inventory_2</span>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #005236 0%, #00a472 100%)' }}>
+                <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>inventory_2</span>
               </div>
               <div>
-                <h2 className="font-display font-bold text-primary">รายละเอียดพัสดุ</h2>
-                <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">ข้อมูลสิ่งที่ส่งและหมายเหตุ</p>
+                <h2 className="font-display font-bold text-primary text-sm">รายละเอียดพัสดุ</h2>
+                <p className="text-[10px] text-on-surface-variant/50 uppercase font-bold tracking-wider">ข้อมูลสิ่งที่ส่งและหมายเหตุ</p>
               </div>
             </div>
           </div>
@@ -297,11 +303,12 @@ export default function CreateParcel() {
           </div>
         </div>
 
-        <div className="flex justify-center pt-4">
+        <div className="flex justify-center pt-2">
           <button
             type="submit"
             disabled={isLoading}
-            className="group flex items-center gap-3 h-14 px-12 bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+            className="group flex items-center gap-3 h-13 px-10 text-white rounded-2xl font-display font-bold shadow-lg hover:shadow-xl hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #091426 0%, #1e3a5f 100%)' }}
           >
             <span className={`material-symbols-outlined ${isLoading ? 'animate-spin' : ''}`}>
               {isLoading ? 'progress_activity' : 'add_circle'}

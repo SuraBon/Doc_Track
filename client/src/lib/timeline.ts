@@ -1,26 +1,34 @@
 import type { Parcel } from '@/types/parcel';
 import type { TimelineEvent } from '@/types/timeline';
 
+/**
+ * Parses the structured note field of a parcel into an ordered list of
+ * timeline events suitable for display.
+ */
 export function parseParcelTimeline(parcel: Parcel): TimelineEvent[] {
   const events: TimelineEvent[] = [];
-  let currentId = 1;
+  let idCounter = 1;
 
+  // ── 1. Creation event ────────────────────────────────────────────────────
   events.push({
-    id: String(currentId++),
+    id: String(idCounter++),
     status: parcel['สถานะ'] === 'รอจัดส่ง' ? 'current' : 'completed',
     title: 'รับพัสดุเข้าระบบ',
-    description: `ผู้ส่ง: ${parcel['ผู้ส่ง']} -> ผู้รับ: ${parcel['ผู้รับ']}`,
+    description: `ผู้ส่ง: ${parcel['ผู้ส่ง']} → ผู้รับ: ${parcel['ผู้รับ']}`,
     timestamp: parcel['วันที่สร้าง'],
     location: parcel['สาขาผู้ส่ง'],
   });
 
-  const note = parcel['หมายเหตุ'] || '';
-  const forwardRegex = /\[ส่งต่อโดย:\s*(.*?)\s*จากสาขา:\s*(.*?)\s*ไปสาขา:\s*(.*?)\s*เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/g;
-  let match;
+  // ── 2. Forward events ────────────────────────────────────────────────────
+  const note = parcel['หมายเหตุ'] ?? '';
+  const forwardRegex =
+    /\[ส่งต่อโดย:\s*(.*?)\s*จากสาขา:\s*(.*?)\s*ไปสาขา:\s*(.*?)\s*เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/g;
+
   const forwardEvents: TimelineEvent[] = [];
+  let match: RegExpExecArray | null;
   while ((match = forwardRegex.exec(note)) !== null) {
     forwardEvents.push({
-      id: String(currentId++),
+      id: String(idCounter++),
       status: 'completed',
       title: 'ส่งต่อพัสดุ',
       description: `ส่งต่อโดย: ${match[1]} ไปยังสาขา: ${match[3]}`,
@@ -30,44 +38,53 @@ export function parseParcelTimeline(parcel: Parcel): TimelineEvent[] {
     });
   }
 
-  if (parcel['สถานะ'] !== 'ส่งถึงแล้ว' && parcel['รูปยืนยัน'] && forwardEvents.length > 0) {
+  // Attach the parcel's proof image to the last forward event when the
+  // parcel is still in transit (not yet delivered).
+  if (
+    parcel['สถานะ'] !== 'ส่งถึงแล้ว' &&
+    parcel['รูปยืนยัน'] &&
+    forwardEvents.length > 0
+  ) {
     forwardEvents[forwardEvents.length - 1].imageUrl = parcel['รูปยืนยัน'];
   }
+
   events.push(...forwardEvents);
 
+  // ── 3. Terminal event ────────────────────────────────────────────────────
   if (parcel['สถานะ'] === 'ส่งถึงแล้ว') {
-    const proxyRegex = /\[รับแทนโดย:\s*(.*?)\s*เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/;
-    const proxyMatch = proxyRegex.exec(note);
+    const proxyRegex =
+      /\[รับแทนโดย:\s*(.*?)\s*เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/;
+    const normalRegex =
+      /\[รับพัสดุเรียบร้อย เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/;
 
-    let desc = 'ส่งถึงผู้รับเรียบร้อย';
-    let time = parcel['วันที่รับ'] || '';
-    if (proxyMatch) {
-      desc = `รับแทนโดย: ${proxyMatch[1]}`;
-      time = proxyMatch[2];
-    }
-
-    const normalRegex = /\[รับพัสดุเรียบร้อย เมื่อ:\s*(.*?)(?:\s*รูปภาพ:\s*(.*?))?\]/;
+    const proxyMatch  = proxyRegex.exec(note);
     const normalMatch = normalRegex.exec(note);
-    if (!proxyMatch && normalMatch) {
-      time = normalMatch[1];
-    }
 
-    let deliveryImageUrl = parcel['รูปยืนยัน'] || undefined;
-    if (proxyMatch && proxyMatch[3]) deliveryImageUrl = proxyMatch[3];
-    if (normalMatch && normalMatch[2]) deliveryImageUrl = normalMatch[2];
+    let description = 'ส่งถึงผู้รับเรียบร้อย';
+    let timestamp   = parcel['วันที่รับ'] ?? '';
+    let imageUrl    = parcel['รูปยืนยัน'] ?? undefined;
+
+    if (proxyMatch) {
+      description = `รับแทนโดย: ${proxyMatch[1]}`;
+      timestamp   = proxyMatch[2];
+      if (proxyMatch[3]) imageUrl = proxyMatch[3];
+    } else if (normalMatch) {
+      timestamp = normalMatch[1];
+      if (normalMatch[2]) imageUrl = normalMatch[2];
+    }
 
     events.push({
-      id: String(currentId++),
+      id: String(idCounter++),
       status: 'completed',
       title: 'พัสดุส่งถึงแล้ว',
-      description: desc,
-      timestamp: time,
+      description,
+      timestamp,
       location: parcel['สาขาผู้รับ'],
-      imageUrl: deliveryImageUrl,
+      imageUrl,
     });
   } else if (parcel['สถานะ'] === 'กำลังจัดส่ง') {
     events.push({
-      id: String(currentId++),
+      id: String(idCounter++),
       status: 'current',
       title: 'กำลังจัดส่ง',
       description: 'พัสดุอยู่ระหว่างการเดินทาง',

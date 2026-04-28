@@ -1,4 +1,11 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { Parcel, ParcelSummary } from '@/types/parcel';
 import * as parcelService from '@/lib/parcelService';
 import { summarizeParcels } from '@/lib/parcelStatus';
@@ -17,9 +24,13 @@ interface ParcelStoreValue {
     receiverBranch: string,
     docType: string,
     description?: string,
-    note?: string
+    note?: string,
   ) => Promise<string | null>;
-  confirmReceipt: (trackingID: string, photoUrl: string, note?: string) => Promise<{ success: boolean; error?: string }>;
+  confirmReceipt: (
+    trackingID: string,
+    photoUrl: string,
+    note?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 const ParcelStoreContext = createContext<ParcelStoreValue | null>(null);
@@ -28,20 +39,22 @@ export function ParcelStoreProvider({ children }: { children: ReactNode }) {
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [summary, setSummary] = useState<ParcelSummary | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]     = useState<string | null>(null);
 
-  const loadParcels = useCallback(async (status: string = 'ทั้งหมด') => {
+  const loadParcels = useCallback(async (status = 'ทั้งหมด') => {
     setLoading(true);
     setError(null);
     try {
-      const response = await parcelService.getParcels(status);
-      if (response.success) {
-        setParcels(response.parcels);
+      const res = await parcelService.getParcels(status);
+      if (res.success) {
+        setParcels(res.parcels);
+        // Always recompute summary from the client-side list so derived
+        // statuses (forwarded parcels) are reflected correctly.
         if (status === 'ทั้งหมด') {
-          setSummary(summarizeParcels(response.parcels));
+          setSummary(summarizeParcels(res.parcels));
         }
       } else {
-        setError(response.error || 'ไม่สามารถโหลดข้อมูลได้');
+        setError(res.error ?? 'ไม่สามารถโหลดข้อมูลได้');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
@@ -50,72 +63,66 @@ export function ParcelStoreProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Recompute summary from client-side parcels (which already have derived statuses applied)
-  // instead of fetching raw backend counts that don't account for forwarded parcels
+  /**
+   * Recomputes the summary from the already-loaded parcels array.
+   * This avoids an extra network round-trip and keeps counts consistent
+   * with the derived statuses applied on the client.
+   */
   const loadSummary = useCallback(async () => {
-    if (parcels.length > 0) {
-      setSummary(summarizeParcels(parcels));
-    }
+    setSummary(summarizeParcels(parcels));
   }, [parcels]);
 
   const createParcel = useCallback<ParcelStoreValue['createParcel']>(
     async (senderName, senderBranch, receiverName, receiverBranch, docType, description, note) => {
       setError(null);
       try {
-        const response = await parcelService.createParcel(
-          senderName,
-          senderBranch,
-          receiverName,
-          receiverBranch,
-          docType,
-          description,
-          note
+        const res = await parcelService.createParcel(
+          senderName, senderBranch, receiverName, receiverBranch, docType, description, note,
         );
-        if (!response.success) {
-          setError(response.error || 'ไม่สามารถสร้างรายการได้');
+        if (!res.success) {
+          setError(res.error ?? 'ไม่สามารถสร้างรายการได้');
           return null;
         }
         await loadParcels();
-        await loadSummary();
-        return response.trackingID || null;
+        return res.trackingID ?? null;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
+        const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
+        setError(message);
         return null;
       }
     },
-    [loadParcels, loadSummary]
+    [loadParcels],
   );
 
   const confirmReceipt = useCallback<ParcelStoreValue['confirmReceipt']>(
     async (trackingID, photoUrl, note) => {
       setError(null);
       try {
-        const response = await parcelService.confirmReceipt(trackingID, photoUrl, note);
-        if (response.success) {
+        const res = await parcelService.confirmReceipt(trackingID, photoUrl, note);
+        if (res.success) {
           await loadParcels();
-          await loadSummary();
-          return response;
+        } else {
+          setError(res.error ?? 'ไม่สามารถยืนยันการรับได้');
         }
-        setError(response.error || 'ไม่สามารถยืนยันการรับได้');
-        return response;
+        return res;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
         setError(message);
         return { success: false, error: message };
       }
     },
-    [loadParcels, loadSummary]
+    [loadParcels],
   );
 
-  const value = useMemo(
+  const value = useMemo<ParcelStoreValue>(
     () => ({ parcels, summary, loading, error, loadParcels, loadSummary, createParcel, confirmReceipt }),
-    [parcels, summary, loading, error, loadParcels, loadSummary, createParcel, confirmReceipt]
+    [parcels, summary, loading, error, loadParcels, loadSummary, createParcel, confirmReceipt],
   );
 
   return <ParcelStoreContext.Provider value={value}>{children}</ParcelStoreContext.Provider>;
 }
 
-export function useParcelStoreContext() {
+export function useParcelStoreContext(): ParcelStoreValue {
   const ctx = useContext(ParcelStoreContext);
   if (!ctx) throw new Error('useParcelStore must be used within ParcelStoreProvider');
   return ctx;
