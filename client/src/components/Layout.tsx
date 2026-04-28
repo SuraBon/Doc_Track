@@ -51,7 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
           {isSidebarOpen && (
             <div className="flex flex-col min-w-0">
               <span className="text-white font-black text-lg font-display leading-none">DocTrack</span>
-              <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mt-0.5">Fleet Management</span>
+              <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mt-0.5">ระบบจัดการพัสดุ</span>
             </div>
           )}
           <button

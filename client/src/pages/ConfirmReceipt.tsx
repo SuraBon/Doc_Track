@@ -72,7 +72,7 @@ export default function ConfirmReceipt() {
 
   const handleCheckParcel = async () => {
     if (!trackingId.trim()) {
-      toast.error('กรุณากรอก Tracking ID ก่อนตรวจสอบ');
+      toast.error('กรุณากรอกหมายเลขติดตามก่อนตรวจสอบ');
       return;
     }
 
@@ -119,7 +119,7 @@ export default function ConfirmReceipt() {
           setCurrentStep(2); // Auto move to photo step
         }
       } else {
-        toast.error('ไม่พบข้อมูลพัสดุ หรือ Tracking ID ไม่ถูกต้อง');
+        toast.error('ไม่พบข้อมูลพัสดุ หรือหมายเลขติดตามไม่ถูกต้อง');
       }
     } catch {
       toast.error('เกิดข้อผิดพลาดในการตรวจสอบ');
@@ -133,7 +133,7 @@ export default function ConfirmReceipt() {
       const text = await navigator.clipboard.readText();
       if (text) {
         setTrackingId(text.trim().toUpperCase());
-        toast.success('วาง Tracking ID เรียบร้อย');
+        toast.success('วางหมายเลขติดตามเรียบร้อย');
       }
     } catch {
       toast.error('ไม่สามารถวางข้อมูลได้');
@@ -267,7 +267,7 @@ export default function ConfirmReceipt() {
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
               <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>search</span>
             </div>
-            <h2 className="font-display text-xl font-bold text-primary">ระบุ Tracking ID</h2>
+            <h2 className="font-display text-xl font-bold text-primary">ระบุหมายเลขติดตาม</h2>
             <p className="text-xs text-on-surface-variant uppercase font-bold tracking-widest mt-1">กรอกเลขที่พัสดุเพื่อเริ่มต้นทำรายการ</p>
           </div>
           <div className="p-5 sm:p-8 space-y-6">
@@ -403,7 +403,7 @@ export default function ConfirmReceipt() {
               <div className="flex items-center gap-3 text-on-surface-variant">
                 <span className="material-symbols-outlined text-primary text-xl">barcode_scanner</span>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 leading-none">Tracking ID</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 leading-none">หมายเลขติดตาม</span>
                   <span className="font-mono font-bold text-primary text-base leading-tight">{trackingId}</span>
                 </div>
               </div>
@@ -605,7 +605,7 @@ export default function ConfirmReceipt() {
               <div className="p-4 sm:p-6 space-y-6">
                 {/* Tracking ID */}
                 <div className="flex items-center justify-between border-b border-outline-variant/20 pb-4">
-                  <span className="text-sm font-bold text-on-surface-variant">Tracking ID</span>
+                  <span className="text-sm font-bold text-on-surface-variant">หมายเลขติดตาม</span>
                   <span className="font-mono text-lg sm:text-xl font-black text-primary tracking-wider">{trackingId}</span>
                 </div>
 

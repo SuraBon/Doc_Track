@@ -19,10 +19,10 @@ export default function Timeline({ events, className = '' }: TimelineProps) {
   const isTransit = currentEvent?.title.includes('จัดส่ง') || currentEvent?.title.includes('เดินทาง') || currentEvent?.title.includes('ส่งต่อ');
   
   const headerStyle = isDelivered 
-    ? { icon: 'home_app_logo', color: 'bg-emerald-600', shadow: 'shadow-emerald-200', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200', text: 'จัดส่งสำเร็จเรียบร้อย', sub: 'พัสดุของคุณถูกจัดส่งถึงที่หมายแล้ว ขอบคุณที่ใช้บริการ', badgeText: 'Delivered' }
+    ? { icon: 'home_app_logo', color: 'bg-emerald-600', shadow: 'shadow-emerald-200', badge: 'bg-emerald-100 text-emerald-800 border-emerald-200', text: 'จัดส่งสำเร็จเรียบร้อย', sub: 'พัสดุของคุณถูกจัดส่งถึงที่หมายแล้ว ขอบคุณที่ใช้บริการ', badgeText: 'จัดส่งแล้ว' }
     : isTransit
-      ? { icon: 'local_shipping', color: 'bg-blue-600', shadow: 'shadow-blue-200', badge: 'bg-blue-100 text-blue-800 border-blue-200', text: 'พัสดุกำลังเดินทาง', sub: 'พัสดุของคุณกำลังอยู่ระหว่างการจัดส่งไปยังปลายทาง', badgeText: 'In Transit' }
-      : { icon: 'pending_actions', color: 'bg-amber-500', shadow: 'shadow-amber-200', badge: 'bg-amber-100 text-amber-800 border-amber-200', text: 'รับพัสดุเข้าระบบ', sub: 'พัสดุของคุณถูกรับเข้าสู่ระบบและรอคิวจัดส่ง', badgeText: 'In Process' };
+      ? { icon: 'local_shipping', color: 'bg-blue-600', shadow: 'shadow-blue-200', badge: 'bg-blue-100 text-blue-800 border-blue-200', text: 'พัสดุกำลังเดินทาง', sub: 'พัสดุของคุณกำลังอยู่ระหว่างการจัดส่งไปยังปลายทาง', badgeText: 'กำลังจัดส่ง' }
+      : { icon: 'pending_actions', color: 'bg-amber-500', shadow: 'shadow-amber-200', badge: 'bg-amber-100 text-amber-800 border-amber-200', text: 'รับพัสดุเข้าระบบ', sub: 'พัสดุของคุณถูกรับเข้าสู่ระบบและรอคิวจัดส่ง', badgeText: 'กำลังดำเนินการ' };
 
   const getStatusIcon = (status: TimelineEvent['status'], title: string) => {
     switch (status) {
@@ -143,7 +143,7 @@ export default function Timeline({ events, className = '' }: TimelineProps) {
                         <span className="material-symbols-outlined text-sm">
                           {event.title.includes('จัดส่ง') || event.title.includes('เดินทาง') ? 'local_shipping' : 'auto_awesome'}
                         </span>
-                        {event.title.includes('จัดส่ง') || event.title.includes('เดินทาง') ? 'In Transit' : 'In Process'}
+                        {event.title.includes('จัดส่ง') || event.title.includes('เดินทาง') ? 'กำลังจัดส่ง' : 'กำลังดำเนินการ'}
                       </span>
                     </div>
                   )}

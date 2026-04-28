@@ -458,14 +458,14 @@ export default function CreateParcel() {
           <div className="p-8 space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 flex flex-col items-center gap-5 shadow-sm">
               <div className="flex flex-col items-center gap-1">
-                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em]">Tracking ID</span>
+                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em]">หมายเลขติดตาม</span>
                 <code className="text-3xl font-mono font-black text-primary">{createdTrackingId}</code>
               </div>
               <div className="bg-surface-container-low p-3 rounded-2xl border border-outline-variant/20">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${createdTrackingId}`}
                   className="w-32 h-32 mix-blend-multiply"
-                  alt="QR Code"
+                  alt="คิวอาร์โค้ด"
                 />
               </div>
             </div>
@@ -492,15 +492,15 @@ export default function CreateParcel() {
                         <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${createdTrackingId}" style="width:180px;height:180px;margin:20px 0;" />
                         <div style="margin-top:20px;text-align:left;border-top:2px solid #eee;padding-top:20px;">
                           <div style="margin-bottom:10px;">
-                            <p style="margin:0;font-size:10px;color:#666;text-transform:uppercase;font-weight:bold;">Sender</p>
+                            <p style="margin:0;font-size:10px;color:#666;text-transform:uppercase;font-weight:bold;">ผู้ส่ง</p>
                             <p style="margin:0;font-weight:bold;">${v.senderName} (${v.senderBranch})</p>
                           </div>
                           <div>
-                            <p style="margin:0;font-size:10px;color:#666;text-transform:uppercase;font-weight:bold;">Receiver</p>
+                            <p style="margin:0;font-size:10px;color:#666;text-transform:uppercase;font-weight:bold;">ผู้รับ</p>
                             <p style="margin:0;font-weight:bold;">${v.receiverName} (${v.receiverBranch})</p>
                           </div>
                         </div>
-                        <p style="margin-top:30px;font-size:10px;color:#999;font-style:italic;">Generated at: ${new Date().toLocaleString()}</p>
+                        <p style="margin-top:30px;font-size:10px;color:#999;font-style:italic;">สร้างเมื่อ: ${new Date().toLocaleString('th-TH')}</p>
                       </div>
                       <script>window.onload = () => { window.print(); window.close(); }</script>
                     `);

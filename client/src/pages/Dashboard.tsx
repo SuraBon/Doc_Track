@@ -165,7 +165,7 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-black text-primary">Dashboard</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-black text-primary">ภาพรวมระบบ</h1>
           <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">ภาพรวมการจัดส่งเอกสารและพัสดุแบบเรียลไทม์</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -199,7 +199,7 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
             <input
               value={searchTerm}
               onChange={e => handleSearchChange(e.target.value)}
-              placeholder="ค้นหา Tracking ID, ผู้ส่ง หรือ ผู้รับ..."
+              placeholder="ค้นหาหมายเลขติดตาม, ผู้ส่ง หรือ ผู้รับ..."
               className="w-full bg-surface-container-lowest border border-outline-variant/60 rounded-xl pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-display transition-all"
             />
           </div>
@@ -263,11 +263,11 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
             <table className="w-full text-left border-collapse min-w-[580px]">
               <thead>
                 <tr className="text-[10px] uppercase tracking-widest font-black text-on-surface-variant/50 border-b border-outline-variant/10">
-                  <th className="px-5 py-3 bg-surface-container-lowest/60">Tracking ID</th>
+                  <th className="px-5 py-3 bg-surface-container-lowest/60">หมายเลขติดตาม</th>
                   <th className="px-4 py-3 bg-surface-container-lowest/60">ผู้ส่ง → ผู้รับ</th>
                   <th className="px-4 py-3 bg-surface-container-lowest/60">วันที่</th>
                   <th className="px-4 py-3 bg-surface-container-lowest/60">สถานะ</th>
-                  <th className="px-4 py-3 bg-surface-container-lowest/60 text-right">Actions</th>
+                  <th className="px-4 py-3 bg-surface-container-lowest/60 text-right">การดำเนินการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/8">
@@ -341,9 +341,9 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
               style={{ background: 'linear-gradient(135deg, #0d1f3c 0%, #091426 100%)' }}>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <DialogTitle className="text-lg sm:text-xl font-black font-display text-white">Tracking Journey</DialogTitle>
+                  <DialogTitle className="text-lg sm:text-xl font-black font-display text-white">เส้นทางการจัดส่ง</DialogTitle>
                   <DialogDescription className="text-white/50 mt-1 text-xs">
-                    Tracking ID: <code className="font-mono text-white/80 font-bold">{selectedParcel?.TrackingID}</code>
+                    หมายเลขติดตาม: <code className="font-mono text-white/80 font-bold">{selectedParcel?.TrackingID}</code>
                   </DialogDescription>
                   {selectedParcel && (
                     <div className="flex items-center gap-2 mt-2">
@@ -383,7 +383,7 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
                     <div className="bg-white rounded-2xl p-4 sm:p-5 border border-outline-variant/30 shadow-sm">
                       <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em] mb-4 flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-sm">info</span>
-                        Parcel Details
+                        รายละเอียดพัสดุ
                       </p>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         {[

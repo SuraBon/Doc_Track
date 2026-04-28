@@ -44,7 +44,7 @@ export default function Track() {
   const handleSearch = async (e?: React.FormEvent, searchId?: string) => {
     if (e) e.preventDefault();
     const id = (searchId || trackingId).trim();
-    if (!id) { toast.error('กรุณากรอก Tracking ID'); return; }
+    if (!id) { toast.error('กรุณากรอกหมายเลขติดตาม'); return; }
     setIsLoading(true);
     try {
       const res = await getParcel(id);
@@ -68,7 +68,7 @@ export default function Track() {
   const handlePaste = async () => {
     try {
       const t = await navigator.clipboard.readText();
-      if (t) { setTrackingId(t.trim().toUpperCase()); toast.success('วาง Tracking ID เรียบร้อย'); }
+      if (t) { setTrackingId(t.trim().toUpperCase()); toast.success('วางหมายเลขติดตามเรียบร้อย'); }
     } catch { toast.error('ไม่สามารถวางข้อมูลได้'); }
   };
 
@@ -94,7 +94,7 @@ export default function Track() {
       {/* Header */}
       <div>
         <h1 className="font-display text-2xl sm:text-3xl font-black text-primary">ติดตามพัสดุ</h1>
-        <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">ค้นหาและติดตามสถานะการจัดส่งแบบ Real-time</p>
+        <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">ค้นหาและติดตามสถานะการจัดส่งแบบเรียลไทม์</p>
       </div>
 
       {/* Search box */}
@@ -103,7 +103,7 @@ export default function Track() {
           <div className="relative flex-1 group">
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-xl transition-colors group-focus-within:text-primary">search</span>
             <input
-              placeholder="กรอก Tracking ID หรือชื่อผู้รับ..."
+              placeholder="กรอกหมายเลขติดตาม หรือชื่อผู้รับ..."
               value={trackingId}
               onChange={e => setTrackingId(e.target.value.toUpperCase())}
               className="w-full h-12 sm:h-14 pl-11 pr-12 text-base sm:text-lg font-display bg-surface-container-lowest border-2 border-outline-variant/60 focus:border-primary focus:ring-4 focus:ring-primary/8 rounded-xl outline-none transition-all placeholder:text-outline-variant/50"
@@ -216,7 +216,7 @@ export default function Track() {
                 <div className="space-y-5">
                   {/* Sender / Receiver */}
                   <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/30 space-y-4">
-                    <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em]">Parcel Details</p>
+                    <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em]">รายละเอียดพัสดุ</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {[
                         { label: 'ชื่อผู้ส่ง', name: parcel['ผู้ส่ง'], branch: parcel['สาขาผู้ส่ง'], icon: 'person', color: 'text-primary' },
@@ -315,7 +315,7 @@ export default function Track() {
             <span className="material-symbols-outlined text-3xl text-on-surface-variant/30">search_off</span>
           </div>
           <h3 className="font-display text-lg font-bold text-primary">ไม่พบข้อมูลพัสดุ</h3>
-          <p className="text-sm text-on-surface-variant mt-1 max-w-xs mx-auto">ไม่พบหมายเลขพัสดุที่คุณระบุ กรุณาตรวจสอบ Tracking ID อีกครั้ง</p>
+          <p className="text-sm text-on-surface-variant mt-1 max-w-xs mx-auto">ไม่พบหมายเลขพัสดุที่คุณระบุ กรุณาตรวจสอบหมายเลขติดตามอีกครั้ง</p>
           <button onClick={() => setTrackingId('')} className="mt-4 text-sm text-primary font-bold hover:underline">
             ล้างและค้นหาใหม่
           </button>
