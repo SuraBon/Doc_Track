@@ -112,7 +112,7 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
         setRefreshCountdown((prev) => {
           if (prev <= 1) {
             fetchData();
-            return 180;
+            return 120;
           }
           return prev - 1;
         });
@@ -214,16 +214,7 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
           <h1 className="font-display text-3xl font-bold text-primary mb-1">Dashboard</h1>
           <p className="text-sm text-on-surface-variant">
             ภาพรวมการจัดส่งเอกสารและพัสดุแบบเรียลไทม์
-            <button
-              onClick={handleRefresh}
-              disabled={loading}
-              className="ml-2 inline-flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant text-primary rounded-lg font-display text-sm font-semibold hover:bg-surface-container transition-colors shadow-sm active:scale-95 duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="รีเฟรชข้อมูล"
-            >
-              <span className={`material-symbols-outlined text-sm ${loading ? 'animate-spin' : ''}`}>refresh</span>
-              Refresh
-            </button>
-          </p>
+                      </p>
         </div>
               </div>
 
