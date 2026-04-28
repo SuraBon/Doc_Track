@@ -27,20 +27,20 @@ const STATS = [
 ] as const;
 
 const StatsCard = ({ label, icon, grad, text, count }: { label: string; icon: string; grad: string; text: string; count: number }) => (
-  <div className="relative overflow-hidden rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 group cursor-default"
+  <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 group cursor-default"
     style={{ background: 'white' }}>
     {/* Gradient accent top */}
     <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${grad} rounded-t-2xl`} />
     <div className="flex items-start justify-between mt-1">
       <div>
-        <p className="text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.15em] mb-2">{label}</p>
+        <p className="text-[10px] sm:text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.15em] mb-1.5 sm:mb-2">{label}</p>
         <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-black text-primary font-display">{count}</span>
-          <span className="text-xs text-on-surface-variant/40 font-bold">รายการ</span>
+          <span className="text-3xl sm:text-4xl font-black text-primary font-display">{count}</span>
+          <span className="text-[10px] sm:text-xs text-on-surface-variant/40 font-bold">รายการ</span>
         </div>
       </div>
-      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300`}>
-        <span className={`material-symbols-outlined text-xl ${text}`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+      <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300`}>
+        <span className={`material-symbols-outlined text-base sm:text-xl ${text}`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
       </div>
     </div>
   </div>
@@ -179,14 +179,14 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {/* Countdown pill */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-on-surface-variant border border-outline-variant/40 bg-white/70 backdrop-blur-sm">
+          <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-xs font-medium text-on-surface-variant border border-outline-variant/40 bg-white/70 backdrop-blur-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-mono font-bold text-primary">{refreshCountdown}s</span>
+            <span className="font-mono font-bold text-primary text-[11px] sm:text-xs">{refreshCountdown}s</span>
           </div>
           <button onClick={handleRefresh}
-            className="p-2 rounded-xl border border-outline-variant/40 bg-white/70 backdrop-blur-sm hover:bg-white transition-all text-on-surface-variant hover:text-primary shadow-sm"
+            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-outline-variant/40 bg-white/70 backdrop-blur-sm hover:bg-white transition-all text-on-surface-variant hover:text-primary shadow-sm"
             title="รีเฟรช">
-            <span className="material-symbols-outlined text-lg">refresh</span>
+            <span className="material-symbols-outlined text-base sm:text-lg">refresh</span>
           </button>
         </div>
       </div>
