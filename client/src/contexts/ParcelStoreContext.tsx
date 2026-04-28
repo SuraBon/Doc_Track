@@ -47,11 +47,8 @@ export function ParcelStoreProvider({ children }: { children: ReactNode }) {
       const res = await parcelService.getParcels(status);
       if (res.success) {
         setParcels(res.parcels);
-        // Always recompute summary from the client-side list so derived
-        // statuses (forwarded parcels) are reflected correctly.
-        if (status === 'ทั้งหมด') {
-          setSummary(summarizeParcels(res.parcels));
-        }
+        setSummary(summarizeParcels(res.parcels));
+        setError(null); // clear any previous error on success
       } else {
         setError(res.error ?? 'ไม่สามารถโหลดข้อมูลได้');
       }

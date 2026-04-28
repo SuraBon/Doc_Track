@@ -149,8 +149,10 @@ function TrackingMap({ events }: TrackingMapProps) {
 
   useEffect(() => {
     if (!mapRef.current) return;
-    const id = setTimeout(() => mapRef.current?.invalidateSize(), 100);
-    return () => clearTimeout(id);
+    const frame = requestAnimationFrame(() => {
+      mapRef.current?.invalidateSize();
+    });
+    return () => cancelAnimationFrame(frame);
   }, [isMapReady]);
 
   return (

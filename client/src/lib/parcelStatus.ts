@@ -26,10 +26,12 @@ export function applyDerivedStatuses(parcels: Parcel[]): Parcel[] {
 }
 
 export function summarizeParcels(parcels: Parcel[]): ParcelSummary {
+  // Apply derived statuses first so forwarded parcels count correctly
+  const derived = applyDerivedStatuses(parcels);
   const summary: ParcelSummary = { total: 0, pending: 0, transit: 0, delivered: 0 };
-  for (const parcel of parcels) {
+  for (const parcel of derived) {
     summary.total++;
-    if (parcel['สถานะ'] === 'รอจัดส่ง')      summary.pending++;
+    if (parcel['สถานะ'] === 'รอจัดส่ง')       summary.pending++;
     else if (parcel['สถานะ'] === 'กำลังจัดส่ง') summary.transit++;
     else if (parcel['สถานะ'] === 'ส่งถึงแล้ว')  summary.delivered++;
   }

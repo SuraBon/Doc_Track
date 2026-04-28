@@ -44,11 +44,15 @@ export function formatThaiDateTime(dateStr: string): string {
     
     if (isNaN(date.getTime())) return dateStr;
 
-    const datePart = formatThaiDate(dateStr);
+    // ✅ FIX: reuse parsed date instead of calling formatThaiDate (which re-parses)
+    const day = date.getDate();
+    const month = THAI_MONTHS[date.getMonth()];
+    const year = date.getFullYear() + 543;
+    const datePart = `${day} ${month} ${year}`;
     const timePart = date.toTimeString().split(' ')[0].substring(0, 5); // HH:mm
 
     return `${datePart} ${timePart}`;
-  } catch (e) {
+  } catch {
     return dateStr;
   }
 }

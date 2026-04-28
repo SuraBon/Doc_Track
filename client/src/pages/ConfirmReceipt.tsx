@@ -83,10 +83,10 @@ export default function ConfirmReceipt() {
         const p = res.parcel;
 
         let currentBranch = p['สาขาผู้ส่ง'];
-        const note = p['หมายเหตุ'] || '';
+        const parcelNote = p['หมายเหตุ'] || '';
         const forwardRegex = /\[ส่งต่อโดย:\s*(.*?)\s*จากสาขา:\s*(.*?)\s*ไปสาขา:\s*(.*?)\s*เมื่อ:\s*(.*?)\]/g;
         let match;
-        while ((match = forwardRegex.exec(note)) !== null) {
+        while ((match = forwardRegex.exec(parcelNote)) !== null) {
           currentBranch = match[3];
         }
 
@@ -147,36 +147,48 @@ export default function ConfirmReceipt() {
     }
 
     const reader = new FileReader();
+    reader.onerror = () => {
+      toast.error('ไม่สามารถอ่านไฟล์ได้ กรุณาลองใหม่');
+    };
     reader.onload = (event) => {
       const img = new Image();
+      img.onerror = () => {
+        toast.error('ไม่สามารถโหลดรูปภาพได้ กรุณาเลือกไฟล์อื่น');
+      };
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const MAX_WIDTH = 1200;
-        const MAX_HEIGHT = 1200;
+        try {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1200;
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height = Math.round((height * MAX_WIDTH) / width);
-            width = MAX_WIDTH;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
           }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width = Math.round((width * MAX_HEIGHT) / height);
-            height = MAX_HEIGHT;
-          }
-        }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          setPhotoPreview(compressedDataUrl);
-          setPhotoUrl(compressedDataUrl);
-          toast.success('เลือกรูปภาพสำเร็จ');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            setPhotoPreview(compressedDataUrl);
+            setPhotoUrl(compressedDataUrl);
+            toast.success('เลือกรูปภาพสำเร็จ');
+          } else {
+            toast.error('ไม่สามารถประมวลผลรูปภาพได้');
+          }
+        } catch {
+          toast.error('เกิดข้อผิดพลาดในการประมวลผลรูปภาพ');
         }
       };
       img.src = event.target?.result as string;
@@ -233,7 +245,7 @@ export default function ConfirmReceipt() {
         setCheckedParcel(null);
         setIsDelivered(false);
       } else {
-        toast.error(`เกิดข้อผิดพลาด: ${response?.error}`);
+        toast.error(response?.error ? `เกิดข้อผิดพลาด: ${response.error}` : 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่');
       }
     } finally {
       setIsLoading(false);
@@ -358,7 +370,11 @@ export default function ConfirmReceipt() {
                 <div className="absolute inset-0 bg-primary/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-[2px]">
                   <button
                     className="flex items-center gap-2 px-6 py-2.5 bg-white text-primary rounded-xl font-bold active:scale-95 transition-all shadow-lg"
-                    onClick={() => setPhotoPreview(null)}
+                    onClick={() => {
+                      setPhotoPreview(null);
+                      setPhotoUrl('');
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                    }}
                   >
                     <span className="material-symbols-outlined">restart_alt</span>
                     ถ่ายใหม่
@@ -369,7 +385,13 @@ export default function ConfirmReceipt() {
 
             <div className="flex gap-4">
               <button
-                onClick={() => setCurrentStep(1)}
+                onClick={() => {
+                  setCurrentStep(1);
+                  // reset photo state เมื่อย้อนกลับ
+                  setPhotoPreview(null);
+                  setPhotoUrl('');
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
                 className="flex items-center justify-center gap-2 h-14 flex-1 rounded-2xl font-display font-bold border-2 border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors"
               >
                 <span className="material-symbols-outlined">arrow_back</span>

@@ -27,12 +27,19 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Layout currentPage={currentPage} setCurrentPage={setCurrentPage}>
-            {currentPage === "dashboard" && (
+            {/* ใช้ hidden แทน unmount เพื่อ preserve state ของแต่ละหน้า */}
+            <div className={currentPage === "dashboard" ? '' : 'hidden'}>
               <Dashboard isConfigured={isConfiguredState} />
-            )}
-            {currentPage === "create" && <CreateParcel />}
-            {currentPage === "confirm" && <ConfirmReceipt />}
-            {currentPage === "track" && <Track />}
+            </div>
+            <div className={currentPage === "create" ? '' : 'hidden'}>
+              <CreateParcel />
+            </div>
+            <div className={currentPage === "confirm" ? '' : 'hidden'}>
+              <ConfirmReceipt />
+            </div>
+            <div className={currentPage === "track" ? '' : 'hidden'}>
+              <Track />
+            </div>
           </Layout>
         </TooltipProvider>
       </ThemeProvider>

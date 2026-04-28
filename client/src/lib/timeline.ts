@@ -10,9 +10,11 @@ export function parseParcelTimeline(parcel: Parcel): TimelineEvent[] {
   let idCounter = 1;
 
   // ── 1. Creation event ────────────────────────────────────────────────────
+  // ✅ FIX: 'กำลังจัดส่ง' status should also show creation as completed, not current
+  const isCreationCurrent = parcel['สถานะ'] === 'รอจัดส่ง';
   events.push({
     id: String(idCounter++),
-    status: parcel['สถานะ'] === 'รอจัดส่ง' ? 'current' : 'completed',
+    status: isCreationCurrent ? 'current' : 'completed',
     title: 'รับพัสดุเข้าระบบ',
     description: `ผู้ส่ง: ${parcel['ผู้ส่ง']} → ผู้รับ: ${parcel['ผู้รับ']}`,
     timestamp: parcel['วันที่สร้าง'],
@@ -27,15 +29,18 @@ export function parseParcelTimeline(parcel: Parcel): TimelineEvent[] {
   const forwardEvents: TimelineEvent[] = [];
   let match: RegExpExecArray | null;
   while ((match = forwardRegex.exec(note)) !== null) {
-    forwardEvents.push({
-      id: String(idCounter++),
-      status: 'completed',
-      title: 'ส่งต่อพัสดุ',
-      description: `ส่งต่อโดย: ${match[1]} ไปยังสาขา: ${match[3]}`,
-      timestamp: match[4],
-      location: match[2],
-      imageUrl: match[5] || undefined,
-    });
+    // ✅ FIX: Validate all required groups before pushing
+    if (match[1]?.trim() && match[2]?.trim() && match[3]?.trim() && match[4]?.trim()) {
+      forwardEvents.push({
+        id: String(idCounter++),
+        status: 'completed',
+        title: 'ส่งต่อพัสดุ',
+        description: `ส่งต่อโดย: ${match[1].trim()} ไปยังสาขา: ${match[3].trim()}`,
+        timestamp: match[4].trim(),
+        location: match[2].trim(),
+        imageUrl: match[5]?.trim() || undefined,
+      });
+    }
   }
 
   // Attach the parcel's proof image to the last forward event when the

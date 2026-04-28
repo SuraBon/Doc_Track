@@ -8,7 +8,7 @@ import Timeline from '@/components/Timeline';
 import ImagePopup from '@/components/ImagePopup';
 import { toast } from 'sonner';
 import type { Parcel } from '@/types/parcel';
-import { getParcel, searchParcels } from '@/lib/parcelService';
+import { getParcel, searchParcels, BRANCHES_WITH_COORDS } from '@/lib/parcelService';
 import { parseParcelTimeline } from '@/lib/timeline';
 import TrackingMap from '@/components/TrackingMap';
 import { formatThaiDate } from '@/lib/dateUtils';
@@ -43,8 +43,10 @@ export default function Track() {
 
   const handleSearch = async (e?: React.FormEvent, searchId?: string) => {
     if (e) e.preventDefault();
-    const id = (searchId || trackingId).trim();
+    const id = (searchId ?? trackingId).trim();
     if (!id) { toast.error('กรุณากรอกหมายเลขติดตาม'); return; }
+    // ✅ FIX: sync input display with what we're actually searching
+    if (searchId && searchId !== trackingId) setTrackingId(searchId);
     setIsLoading(true);
     try {
       const res = await getParcel(id);
@@ -77,14 +79,9 @@ export default function Track() {
   /** True when every branch in the parcel is unknown — map would show nothing useful. */
   const hasKnownBranches = useMemo(() => {
     if (!parcel) return false;
-    const BRANCH_COORDS_KEYS = [
-      'MS','พระประแดง','บางนา','มีนบุรี','เลียบด่วน','เดอะมอลล์บางกะปิ',
-      'วิภาวดี','พิบูลสงคราม','พันธุ์สงคราม','เดอะมอลล์บางแค','มหาชัย',
-      'ศาลายา','กาญจนา','เซ็นทรัล พระราม 2','เซ็นทรัลพระราม 2',
-    ];
     return (
-      BRANCH_COORDS_KEYS.includes(parcel['สาขาผู้ส่ง']) ||
-      BRANCH_COORDS_KEYS.includes(parcel['สาขาผู้รับ'])
+      BRANCHES_WITH_COORDS.includes(parcel['สาขาผู้ส่ง']) ||
+      BRANCHES_WITH_COORDS.includes(parcel['สาขาผู้รับ'])
     );
   }, [parcel]);
 

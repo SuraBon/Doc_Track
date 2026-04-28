@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParcelStore } from '@/hooks/useParcelStore';
 import type { Parcel } from '@/types/parcel';
+import { formatThaiDate } from '@/lib/dateUtils';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,17 +14,30 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [seenIds, setSeenIds] = useState<Set<string>>(() => {
-    try { return new Set(JSON.parse(localStorage.getItem('seen_parcel_ids') ?? '[]')); }
-    catch { return new Set(); }
+    try {
+      const stored = localStorage.getItem('seen_parcel_ids');
+      if (!stored) return new Set();
+      
+      const data = JSON.parse(stored);
+      // ✅ FIX: Add 30-day expiration
+      if (data.timestamp && Date.now() - data.timestamp > 30 * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem('seen_parcel_ids');
+        return new Set();
+      }
+      return new Set(Array.isArray(data.ids) ? data.ids : data);
+    } catch {
+      return new Set();
+    }
   });
   const notifRef = useRef<HTMLDivElement>(null);
 
   // พัสดุที่อัพเดทล่าสุด — เรียงตามวันที่รับ/สร้าง ล่าสุดก่อน
+  // ✅ FIX: Use proper date comparison instead of string comparison
   const recentParcels = [...parcels]
     .sort((a, b) => {
-      const da = a['วันที่รับ'] || a['วันที่สร้าง'];
-      const db = b['วันที่รับ'] || b['วันที่สร้าง'];
-      return db.localeCompare(da);
+      const da = new Date((a['วันที่รับ'] || a['วันที่สร้าง']).replace(' ', 'T')).getTime();
+      const db = new Date((b['วันที่รับ'] || b['วันที่สร้าง']).replace(' ', 'T')).getTime();
+      return db - da;
     })
     .slice(0, 8);
 
@@ -32,12 +46,17 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
   const markAllSeen = () => {
     const next = new Set([...seenIds, ...recentParcels.map(p => p.TrackingID)]);
     setSeenIds(next);
-    localStorage.setItem('seen_parcel_ids', JSON.stringify([...next]));
+    // ✅ FIX: Store with timestamp for expiration
+    localStorage.setItem('seen_parcel_ids', JSON.stringify({
+      ids: [...next],
+      timestamp: Date.now(),
+    }));
   };
 
   const handleBellClick = () => {
-    setIsNotifOpen(v => !v);
-    if (!isNotifOpen) markAllSeen();
+    const opening = !isNotifOpen;
+    setIsNotifOpen(opening);
+    if (opening) markAllSeen(); // mark seen เมื่อเปิด dropdown
   };
 
   // ปิด dropdown เมื่อคลิกนอก
@@ -247,7 +266,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
                               {p['ผู้ส่ง']} → {p['ผู้รับ']}
                             </p>
                             <p className="text-[10px] text-on-surface-variant/40 mt-0.5">
-                              {p['วันที่รับ'] || p['วันที่สร้าง']}
+                              {formatThaiDate(p['วันที่รับ'] || p['วันที่สร้าง'])}
                             </p>
                           </div>
                         </div>

@@ -55,8 +55,26 @@ export default function CreateParcel() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = getFinalValues();
-    if (!v.senderName || !v.senderBranch || !v.receiverName || !v.receiverBranch || !v.docType) {
-      toast.error('กรุณากรอกข้อมูลที่จำเป็นให้ครบ');
+
+    // ✅ FIX: Proper validation with specific messages
+    if (!v.senderName || v.senderName.length < 2) {
+      toast.error('กรุณากรอกชื่อผู้ส่งอย่างน้อย 2 ตัวอักษร');
+      return;
+    }
+    if (!v.senderBranch || v.senderBranch.length < 1) {
+      toast.error('กรุณาเลือกหรือระบุสาขาผู้ส่ง');
+      return;
+    }
+    if (!v.receiverName || v.receiverName.length < 2) {
+      toast.error('กรุณากรอกชื่อผู้รับอย่างน้อย 2 ตัวอักษร');
+      return;
+    }
+    if (!v.receiverBranch || v.receiverBranch.length < 1) {
+      toast.error('กรุณาเลือกหรือระบุสาขาผู้รับ');
+      return;
+    }
+    if (!v.docType || v.docType.length < 1) {
+      toast.error('กรุณาเลือกหรือระบุประเภทพัสดุ');
       return;
     }
     setIsConfirmOpen(true);

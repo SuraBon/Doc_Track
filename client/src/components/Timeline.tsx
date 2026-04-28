@@ -58,22 +58,16 @@ export default function Timeline({ events, className = '' }: TimelineProps) {
     switch (status) {
       case 'completed':
         return 'bg-white border-outline-variant/30 hover:border-primary/20 hover:bg-surface-container-low/20';
-      case 'current':
-        const isTransit = title.includes('จัดส่ง') || title.includes('เดินทาง');
-        const colorClass = isTransit ? 'border-blue-500 shadow-blue-500/5 ring-blue-500/10' : 'border-secondary shadow-secondary/5 ring-secondary/10';
+      case 'current': {
+        const isCurrentTransit = title.includes('จัดส่ง') || title.includes('เดินทาง');
+        const colorClass = isCurrentTransit ? 'border-blue-500 shadow-blue-500/5 ring-blue-500/10' : 'border-secondary shadow-secondary/5 ring-secondary/10';
         return `bg-white ${colorClass} shadow-xl ring-1`;
+      }
       case 'pending':
         return 'bg-surface-container-lowest border-outline-variant/20 opacity-70';
       default:
         return 'bg-white border-outline-variant/30';
     }
-  };
-
-  const getLineStyle = (status: TimelineEvent['status'], nextStatus?: TimelineEvent['status']) => {
-    if (status === 'completed' && nextStatus === 'completed') return 'bg-primary';
-    if (status === 'completed' && nextStatus === 'current') return 'bg-gradient-to-b from-primary to-secondary';
-    if (status === 'current') return 'bg-gradient-to-b from-secondary to-outline-variant';
-    return 'bg-outline-variant';
   };
 
   return (

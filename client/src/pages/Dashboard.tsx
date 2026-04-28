@@ -83,17 +83,30 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
     debounceRef.current = setTimeout(() => setDebouncedSearch(value), 300);
   };
 
+  // ✅ FIX: Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   // Single fetch function — loadParcels already recomputes summary internally
+  // ✅ FIX: Use ref to avoid stale closure without adding loadParcels to deps
+  const loadParcelsRef = useRef(loadParcels);
+  useEffect(() => { loadParcelsRef.current = loadParcels; }, [loadParcels]);
+
   const fetchData = useCallback(async () => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
     try {
-      await loadParcels();
+      await loadParcelsRef.current();
+    } catch {
+      toast.error('ไม่สามารถโหลดข้อมูลได้');
     } finally {
       isFetchingRef.current = false;
       setRefreshCountdown(120);
     }
-  }, [loadParcels]);
+  }, []); // ✅ Empty deps — no infinite loop risk
 
   // Initial load
   useEffect(() => {
@@ -132,12 +145,13 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
   }, [parcels, statusFilter, debouncedSearch]);
 
   // Pagination calculations
-  const totalPages = Math.ceil(filteredParcels.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(filteredParcels.length / pageSize));
   const paginatedParcels = filteredParcels.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const startIndex = (currentPage - 1) * pageSize + 1;
+  const startIndex = filteredParcels.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endIndex = Math.min(currentPage * pageSize, filteredParcels.length);
 
   const handleRefresh = async () => {
+    if (loading) return; // ป้องกันกดซ้ำระหว่าง loading
     await fetchData();
     toast.success('อัปเดตข้อมูลเรียบร้อย');
   };
@@ -184,9 +198,10 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
             <span className="font-mono font-bold text-primary text-[11px] sm:text-xs">{refreshCountdown}s</span>
           </div>
           <button onClick={handleRefresh}
-            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-outline-variant/40 bg-white/70 backdrop-blur-sm hover:bg-white transition-all text-on-surface-variant hover:text-primary shadow-sm"
+            disabled={loading}
+            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-outline-variant/40 bg-white/70 backdrop-blur-sm hover:bg-white transition-all text-on-surface-variant hover:text-primary shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             title="รีเฟรช">
-            <span className="material-symbols-outlined text-base sm:text-lg">refresh</span>
+            <span className={`material-symbols-outlined text-base sm:text-lg ${loading ? 'animate-spin' : ''}`}>refresh</span>
           </button>
         </div>
       </div>
@@ -313,7 +328,9 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
                     </td>
                     <td className="px-4 py-3.5 text-on-surface-variant">
                       <span className="text-sm font-medium">{formatThaiDate(parcel['วันที่สร้าง'])}</span>
-                      <div className="text-[10px] font-mono opacity-50 mt-0.5">{parcel['วันที่สร้าง'].split(' ')[1]}</div>
+                      {parcel['วันที่สร้าง'].includes(' ') && (
+                        <div className="text-[10px] font-mono opacity-50 mt-0.5">{parcel['วันที่สร้าง'].split(' ')[1]}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3.5">
                       <StatusBadge status={parcel['สถานะ']} />

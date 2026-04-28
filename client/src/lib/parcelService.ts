@@ -93,14 +93,24 @@ async function callAPI<T>(payload: object): Promise<T> {
     throw new Error('กรุณาตั้งค่า Google Apps Script URL ก่อน');
   }
 
-  const response = await fetch(GAS_URL, {
-    method: 'POST',
-    body: JSON.stringify({ ...payload, apiKey: GAS_API_KEY }),
-    // GAS requires text/plain to avoid CORS preflight
-    headers: { 'Content-Type': 'text/plain' },
-  });
+  let response: Response;
+  try {
+    response = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, apiKey: GAS_API_KEY }),
+      // GAS requires text/plain to avoid CORS preflight
+      headers: { 'Content-Type': 'text/plain' },
+    });
+  } catch {
+    throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+  }
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('API Key ไม่ถูกต้องหรือไม่มีสิทธิ์เข้าถึง');
+    } else if (response.status >= 500) {
+      throw new Error('เซิร์ฟเวอร์ขัดข้อง กรุณาลองใหม่อีกครั้ง');
+    }
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
