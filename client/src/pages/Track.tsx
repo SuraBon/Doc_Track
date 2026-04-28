@@ -5,14 +5,10 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import StatusBadge from '@/components/StatusBadge';
 import Timeline from '@/components/Timeline';
 import ImagePopup from '@/components/ImagePopup';
 import { toast } from 'sonner';
-import { Search, Calendar, Copy, ClipboardPaste, History, ArrowRight, Package, MapPin, User, Clock } from 'lucide-react';
 import type { Parcel } from '@/types/parcel';
 import { getParcel, searchParcels } from '@/lib/parcelService';
 import { parseParcelTimeline } from '@/lib/timeline';
@@ -165,9 +161,18 @@ export default function Track() {
       {/* Search Results List */}
       {searchResults.length > 0 && !parcel && (
         <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center gap-2 px-2">
-            <span className="material-symbols-outlined text-primary text-xl">list_alt</span>
-            <h3 className="text-sm font-bold text-primary uppercase tracking-widest">ผลการค้นหา ({searchResults.length})</h3>
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-xl">list_alt</span>
+              <h3 className="text-sm font-bold text-primary uppercase tracking-widest">ผลการค้นหา ({searchResults.length})</h3>
+            </div>
+            <button
+              onClick={() => setSearchResults([])}
+              className="text-xs text-on-surface-variant hover:text-error font-semibold flex items-center gap-1 transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+              ล้าง
+            </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {searchResults.map((p) => (
@@ -199,7 +204,16 @@ export default function Track() {
 
       {/* Detailed Parcel View */}
       {parcel && (
-        <div className="space-y-8 animate-in zoom-in-95 duration-500">
+        <div className="space-y-4 sm:space-y-8 animate-in zoom-in-95 duration-500">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setParcel(null)}
+              className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary font-semibold transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">arrow_back</span>
+              ค้นหาใหม่
+            </button>
+          </div>
           <div className="bg-white border border-outline-variant rounded-3xl overflow-hidden shadow-xl">
             {/* Parcel Card Header */}
             <div className="bg-primary p-5 sm:p-8 text-white">

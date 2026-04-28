@@ -4,7 +4,7 @@
  * Design: Premium Logistics
  */
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParcelStore } from '@/hooks/useParcelStore';
 import StatusBadge from '@/components/StatusBadge';
 import type { Parcel } from '@/types/parcel';
@@ -87,6 +87,14 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
   const [refreshCountdown, setRefreshCountdown] = useState(120);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(value), 300);
+  };
 
   const handleRowClick = (parcel: Parcel) => {
     setSelectedParcel(parcel);
@@ -129,8 +137,8 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
       filtered = filtered.filter((p) => p['สถานะ'] === statusFilter);
     }
 
-    if (searchTerm) {
-      const query = searchTerm.toLowerCase();
+    if (debouncedSearch) {
+      const query = debouncedSearch.toLowerCase();
       filtered = filtered.filter(
         (p) =>
           p['TrackingID'].toLowerCase().includes(query) ||
@@ -153,7 +161,7 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
     }
 
     setFilteredParcels(filtered);
-  }, [parcels, statusFilter, searchTerm, exportStartDate, exportEndDate]);
+  }, [parcels, statusFilter, debouncedSearch, exportStartDate, exportEndDate]);
 
   const handleRefresh = async () => {
     await fetchData();
@@ -216,6 +224,27 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
             ภาพรวมการจัดส่งเอกสารและพัสดุแบบเรียลไทม์
           </p>
         </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Refresh countdown */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container rounded-xl border border-outline-variant/30 text-xs text-on-surface-variant font-medium">
+            <span className="material-symbols-outlined text-sm text-primary animate-pulse">sync</span>
+            <span>รีเฟรชใน <span className="font-mono font-bold text-primary">{refreshCountdown}s</span></span>
+          </div>
+          <button
+            onClick={handleRefresh}
+            className="p-2 rounded-xl border border-outline-variant/30 bg-white hover:bg-surface-container transition-colors text-on-surface-variant hover:text-primary"
+            title="รีเฟรชข้อมูล"
+          >
+            <span className="material-symbols-outlined text-xl">refresh</span>
+          </button>
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-3 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-opacity shadow-sm"
+          >
+            <span className="material-symbols-outlined text-sm">download</span>
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Stats Overview - Bento Style */}
@@ -261,7 +290,7 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
             <input 
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full bg-white border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-display" 
               placeholder="ค้นหา Tracking ID, ผู้ส่ง หรือ ผู้รับ..." 
               type="text"
@@ -310,10 +339,11 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
       <div className="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm">
         <div className="px-4 sm:px-6 py-4 border-b border-outline-variant/10 flex justify-between items-center bg-surface-container-low/30">
           <h2 className="font-display text-sm sm:text-base font-bold text-primary">รายการพัสดุล่าสุด</h2>
-          <div className="flex gap-1">
-            <button className="p-1.5 hover:bg-white rounded border border-transparent hover:border-outline-variant/30">
-              <span className="material-symbols-outlined text-[20px]">more_horiz</span>
-            </button>
+          <div className="flex items-center gap-2">
+            {loading && (
+              <span className="material-symbols-outlined text-sm text-primary animate-spin">progress_activity</span>
+            )}
+            <span className="text-xs text-on-surface-variant/60 font-medium hidden sm:block">{filteredParcels.length} รายการ</span>
           </div>
         </div>
         
@@ -389,12 +419,21 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
         </div>
         
         <div className="px-4 sm:px-6 py-4 bg-surface-container-low/30 border-t border-outline-variant/10 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-xs text-on-surface-variant font-medium">Showing {filteredParcels.length} entries</span>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 border border-outline-variant rounded bg-white text-xs font-semibold hover:bg-surface-container">Previous</button>
-            <button className="px-3 py-1 border border-primary bg-primary text-white rounded text-xs font-semibold">1</button>
-            <button className="px-3 py-1 border border-outline-variant rounded bg-white text-xs font-semibold hover:bg-surface-container">Next</button>
-          </div>
+          <span className="text-xs text-on-surface-variant font-medium">
+            แสดง <span className="font-bold text-primary">{filteredParcels.length}</span> รายการ
+            {filteredParcels.length !== parcels.length && (
+              <span className="text-on-surface-variant/60"> จาก {parcels.length} ทั้งหมด</span>
+            )}
+          </span>
+          {(searchTerm || statusFilter !== 'ทั้งหมด' || exportStartDate || exportEndDate) && (
+            <button
+              onClick={() => { setSearchTerm(''); setDebouncedSearch(''); setStatusFilter('ทั้งหมด'); setExportStartDate(''); setExportEndDate(''); }}
+              className="flex items-center gap-1.5 text-xs text-error font-semibold hover:underline"
+            >
+              <span className="material-symbols-outlined text-sm">filter_alt_off</span>
+              ล้างตัวกรอง
+            </button>
+          )}
         </div>
       </div>
 

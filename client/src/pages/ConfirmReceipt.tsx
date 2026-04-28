@@ -189,16 +189,24 @@ export default function ConfirmReceipt() {
 
       const response = await confirmReceipt(trackingId, photoUrl, finalNote);
       if (response && response.success) {
-        // Success toast removed to prevent scrollbar issue
-        // Reset
+        toast.success('บันทึกข้อมูลเรียบร้อยแล้ว');
+        // Reset all state
         setCurrentStep(1);
         setTrackingId('');
         setPhotoUrl('');
         setPhotoPreview(null);
         setNote('');
         setIsForwarding(false);
+        setForwardSender('');
+        setForwardFromBranch('');
+        setForwardToBranch('');
+        setCustomForwardFromBranch('');
+        setCustomForwardToBranch('');
         setIsProxy(false);
+        setProxyName('');
         setCheckedParcel(null);
+        setParcelDest(null);
+        setIsDelivered(false);
       } else {
         toast.error(`เกิดข้อผิดพลาด: ${response?.error}`);
       }
@@ -410,7 +418,7 @@ export default function ConfirmReceipt() {
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className={`p-5 rounded-2xl border-2 transition-all duration-300 ${isForwarding ? 'bg-secondary-fixed/10 border-secondary-container' : 'bg-white border-outline-variant/30 hover:border-outline-variant'}`}>
-                  <div className="flex items-center justify-between cursor-pointer group" onClick={() => setIsForwarding(!isForwarding)}>
+                  <div className="flex items-center justify-between cursor-pointer group" onClick={() => { setIsForwarding(!isForwarding); if (!isForwarding) setIsProxy(false); }}>
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isForwarding ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface-variant'}`}>
                         <span className="material-symbols-outlined text-2xl">fork_right</span>
@@ -466,7 +474,7 @@ export default function ConfirmReceipt() {
                 </div>
 
                 <div className={`p-5 rounded-2xl border-2 transition-all duration-300 ${isProxy ? 'bg-blue-50 border-blue-500' : 'bg-white border-outline-variant/30 hover:border-outline-variant'}`}>
-                  <div className="flex items-center justify-between cursor-pointer group" onClick={() => setIsProxy(!isProxy)}>
+                  <div className="flex items-center justify-between cursor-pointer group" onClick={() => { setIsProxy(!isProxy); if (!isProxy) setIsForwarding(false); }}>
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isProxy ? 'bg-blue-600 text-white' : 'bg-surface-container text-on-surface-variant'}`}>
                         <span className="material-symbols-outlined text-2xl">account_circle</span>

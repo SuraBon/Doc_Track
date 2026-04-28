@@ -59,7 +59,11 @@ const Layout: React.FC<LayoutProps> = ({
           {navItems.map((item) => (
             <a
               key={item.id}
-              onClick={() => setCurrentPage(item.id)}
+              onClick={() => {
+                setCurrentPage(item.id);
+                // Auto-close sidebar on mobile after navigation
+                if (window.innerWidth < 1024) setIsSidebarOpen(false);
+              }}
               className={`flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center'} px-3 py-3 rounded-xl font-display text-sm font-semibold cursor-pointer active:opacity-80 transition-all ${currentPage === item.id
                   ? "bg-secondary-container text-primary shadow-lg"
                   : "text-primary-fixed-dim hover:text-white hover:bg-white/10"
