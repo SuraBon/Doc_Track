@@ -158,6 +158,29 @@ function doPost(e) {
       return createJsonResponse({ success: false, error: "Unauthorized" });
     }
 
+    // --- Token Signature Verification ---
+    const protectedActions = ['createParcel', 'confirmReceipt', 'getParcels', 'getUsers', 'updateUserRole', 'deleteParcel', 'editParcel'];
+    if (payload.token) {
+      const parts = String(payload.token).split('|');
+      if (parts.length === 3) {
+        const expectedBytes = Utilities.computeHmacSha256Signature(parts[0] + "|" + parts[1], configuredKey);
+        if (Utilities.base64Encode(expectedBytes) === parts[2]) {
+          // Token is valid, OVERRIDE payload values with trusted token values
+          payload.employeeId = parts[0];
+          payload.role = parts[1];
+        } else {
+          return createJsonResponse({ success: false, error: "Invalid token signature" });
+        }
+      } else {
+        return createJsonResponse({ success: false, error: "Malformed token" });
+      }
+    } else {
+      if (protectedActions.includes(action)) {
+        return createJsonResponse({ success: false, error: "Authentication required (Missing Token)" });
+      }
+      payload.role = 'Guest';
+    }
+
     const writeActions = ['createParcel', 'confirmReceipt', 'login', 'setupPin', 'updateUserRole', 'deleteParcel', 'editParcel'];
     const isWrite = writeActions.includes(action);
 
@@ -588,6 +611,7 @@ function handleConfirmReceipt(payload) {
   return createJsonResponse({ success: false, error: "Tracking ID not found" });
 }
 
+
 function handleSearchParcels(payload) {
   const query = (payload.query || "").toString().toLowerCase().trim();
   if (!query) {
@@ -643,6 +667,13 @@ function createJsonResponse(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function generateToken(employeeId, role, secret) {
+  const payloadStr = employeeId + "|" + role;
+  const signatureBytes = Utilities.computeHmacSha256Signature(payloadStr, secret);
+  const signature = Utilities.base64Encode(signatureBytes);
+  return payloadStr + "|" + signature;
+}
+
 // --- RBAC & Users ---
 
 function handleLogin(payload) {
@@ -668,7 +699,8 @@ function handleLogin(payload) {
         return createJsonResponse({ success: false, error: "รหัส PIN ไม่ถูกต้อง" });
       }
 
-      return createJsonResponse({ success: true, user: { employeeId, name, branch, role } });
+      const token = generateToken(employeeId, role, getApiKey());
+      return createJsonResponse({ success: true, user: { employeeId, name, branch, role, token } });
     }
   }
 
@@ -700,7 +732,8 @@ function handleSetupPin(payload) {
       const finalName = name || String(data[i][1]).trim();
       const finalBranch = branch || String(data[i][2]).trim();
 
-      return createJsonResponse({ success: true, user: { employeeId, name: finalName, branch: finalBranch, role } });
+      const token = generateToken(employeeId, role, getApiKey());
+      return createJsonResponse({ success: true, user: { employeeId, name: finalName, branch: finalBranch, role, token } });
     }
   }
   return createJsonResponse({ success: false, error: "User not found" });
@@ -723,11 +756,16 @@ function handleGetUsers(payload) {
       createdAt: row[5] ? Utilities.formatDate(new Date(row[5]), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss") : ""
     });
   }
-  return createJsonResponse({ success: true, users });
+  return createJsonResponse({ success: true, users: users });
 }
 
 function handleUpdateUserRole(payload) {
-  const { targetId, newRole } = payload;
+  if (payload.role !== 'Admin') {
+    return createJsonResponse({ success: false, error: "Forbidden: Admins only" });
+  }
+
+  const targetId = String(payload.targetId || "").trim();
+  const newRole = payload.newRole;
   if (!targetId || !newRole) return createJsonResponse({ success: false, error: "Missing fields" });
 
   const sheet = getUsersSheet();
@@ -738,11 +776,15 @@ function handleUpdateUserRole(payload) {
       return createJsonResponse({ success: true });
     }
   }
-  return createJsonResponse({ success: false, error: "User not found" });
+  return createJsonResponse({ success: false, error: "Target user not found" });
 }
 
 function handleDeleteParcel(payload) {
-  const { trackingID } = payload;
+  if (payload.role !== 'Admin') {
+    return createJsonResponse({ success: false, error: "Forbidden: Admins only" });
+  }
+
+  const trackingID = String(payload.trackingID || "").trim();
   if (!trackingID) return createJsonResponse({ success: false, error: "Missing trackingID" });
 
   const sheet = getSpreadsheet().getSheetByName(SHEET_NAME);
@@ -757,6 +799,10 @@ function handleDeleteParcel(payload) {
 }
 
 function handleEditParcel(payload) {
+  if (payload.role !== 'Admin') {
+    return createJsonResponse({ success: false, error: "Forbidden: Admins only" });
+  }
+
   const { trackingID, updates } = payload;
   if (!trackingID || !updates) return createJsonResponse({ success: false, error: "Missing fields" });
 

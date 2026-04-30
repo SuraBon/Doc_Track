@@ -100,7 +100,7 @@ async function callAPI<T>(payload: object): Promise<T> {
     if (storedUser) {
       try {
         const u = JSON.parse(storedUser);
-        authData = { employeeId: u.employeeId, role: u.role };
+        authData = { employeeId: u.employeeId, role: u.role, token: u.token };
       } catch (e) {
         // ignore
       }
@@ -241,7 +241,8 @@ export interface User {
   employeeId: string;
   name: string;
   branch: string;
-  role: 'User' | 'Manager' | 'Admin';
+  role: 'User' | 'Manager' | 'Admin' | 'Guest';
+  token?: string;
 }
 
 export interface UserRow extends User {
