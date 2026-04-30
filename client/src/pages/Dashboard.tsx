@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParcelStore } from '@/hooks/useParcelStore';
+import { useDebounce } from '@/hooks/useDebounce';
 import StatusBadge from '@/components/StatusBadge';
 import type { Parcel } from '@/types/parcel';
 import { toast } from 'sonner';
@@ -67,28 +68,14 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
   const { parcels, summary, loading, loadParcels, hasMore, totalCount, loadMoreParcels } = useParcelStore();
   const [filteredParcels, setFilteredParcels] = useState<Parcel[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [statusFilter, setStatusFilter] = useState('ทั้งหมด');
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
   const [refreshCountdown, setRefreshCountdown] = useState(120);
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFetchingRef = useRef(false);
-
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setDebouncedSearch(value), 300);
-  };
-
-  // ✅ FIX: Cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
 
   // Single fetch function — loadParcels already recomputes summary internally
   // ✅ FIX: Use ref to avoid stale closure without adding loadParcels to deps
@@ -165,7 +152,7 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
     return BRANCHES_WITH_COORDS.includes(selectedParcel['สาขาผู้ส่ง']) || BRANCHES_WITH_COORDS.includes(selectedParcel['สาขาผู้รับ']);
   }, [selectedParcel]);
 
-  const clearFilters = () => { setSearchTerm(''); setDebouncedSearch(''); setStatusFilter('ทั้งหมด'); setCurrentPage(1); };
+  const clearFilters = () => { setSearchTerm(''); setStatusFilter('ทั้งหมด'); setCurrentPage(1); };
   const hasFilters = !!(searchTerm || statusFilter !== 'ทั้งหมด');
 
   if (!isConfigured) {
@@ -222,7 +209,7 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-base">search</span>
             <input
               value={searchTerm}
-              onChange={e => handleSearchChange(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               placeholder="ค้นหาหมายเลขติดตาม, ผู้ส่ง หรือ ผู้รับ..."
               className="w-full bg-surface-container-lowest border border-outline-variant/60 rounded-xl pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-display transition-all"
             />
