@@ -27,6 +27,7 @@ interface ParcelStoreValue {
     docType: string,
     description?: string,
     note?: string,
+    pin?: string,
   ) => Promise<string | null>;
   confirmReceipt: (
     trackingID: string,
@@ -38,6 +39,7 @@ interface ParcelStoreValue {
     location?: string,
     destLocation?: string,
     person?: string,
+    pin?: string,
   ) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -94,11 +96,11 @@ export function ParcelStoreProvider({ children }: { children: ReactNode }) {
   }, [hasMore, loading, currentStatus, loadParcels]);
 
   const createParcel = useCallback<ParcelStoreValue['createParcel']>(
-    async (senderName, senderBranch, receiverName, receiverBranch, docType, description, note) => {
+    async (senderName, senderBranch, receiverName, receiverBranch, docType, description, note, pin) => {
       setError(null);
       try {
         const res = await parcelService.createParcel(
-          senderName, senderBranch, receiverName, receiverBranch, docType, description, note,
+          senderName, senderBranch, receiverName, receiverBranch, docType, description, note, pin
         );
         if (!res.success) {
           setError(res.error ?? 'ไม่สามารถสร้างรายการได้');
@@ -116,10 +118,10 @@ export function ParcelStoreProvider({ children }: { children: ReactNode }) {
   );
 
   const confirmReceipt = useCallback<ParcelStoreValue['confirmReceipt']>(
-    async (trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person) => {
+    async (trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person, pin) => {
       setError(null);
       try {
-        const res = await parcelService.confirmReceipt(trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person);
+        const res = await parcelService.confirmReceipt(trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person, pin);
         if (res.success) {
           await loadParcels();
         } else {

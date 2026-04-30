@@ -30,6 +30,7 @@ export default function CreateParcel() {
   const [customSenderBranch, setCustomSenderBranch] = useState('');
   const [customReceiverBranch, setCustomReceiverBranch] = useState('');
   const [customDocType, setCustomDocType] = useState('');
+  const [pin, setPin] = useState('');
 
   const [createdTrackingId, setCreatedTrackingId] = useState<string | null>(null);
   const [isResultOpen, setIsResultOpen] = useState(false);
@@ -88,7 +89,7 @@ export default function CreateParcel() {
       const trackingId = await createParcel(
         v.senderName, v.senderBranch,
         v.receiverName, v.receiverBranch,
-        v.docType, v.description, v.note,
+        v.docType, v.description, v.note, pin
       );
       if (trackingId) {
         setCreatedTrackingId(trackingId);
@@ -97,11 +98,13 @@ export default function CreateParcel() {
         setCustomSenderBranch('');
         setCustomReceiverBranch('');
         setCustomDocType('');
+        setPin('');
       } else {
         toast.error('ไม่สามารถสร้างรายการได้');
       }
     } finally {
       setIsLoading(false);
+      setPin('');
     }
   };
 
@@ -429,6 +432,23 @@ export default function CreateParcel() {
                 )}
               </div>
             </div>
+
+            {/* PIN Input */}
+            <div className="bg-error/5 rounded-2xl p-4 md:p-5 border border-error/20 mt-6 mx-4 md:mx-6 mb-6">
+              <label className="text-sm font-bold text-error flex items-center gap-1.5 mb-2">
+                <span className="material-symbols-outlined text-[18px]">lock</span>
+                รหัส PIN ประจำสาขา
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={pin}
+                onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="กรอกรหัส 4 หลัก"
+                className="w-full h-12 bg-white border border-error/20 rounded-xl px-4 text-center tracking-[0.5em] text-xl font-bold font-mono focus:border-error focus:ring-2 focus:ring-error/20 outline-none transition-all placeholder:tracking-normal placeholder:text-sm placeholder:font-sans placeholder:font-normal"
+              />
+            </div>
           </div>
 
           {/* Footer (Fixed) */}
@@ -442,8 +462,8 @@ export default function CreateParcel() {
               </button>
               <button
                 onClick={handleConfirmSubmit}
-                disabled={isLoading}
-                className="flex-[2] flex items-center justify-center gap-2 h-14 bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all text-base"
+                disabled={isLoading || pin.length < 4}
+                className="flex-[2] flex items-center justify-center gap-2 h-14 bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all text-base disabled:opacity-50"
               >
                 {isLoading ? (
                   <span className="material-symbols-outlined animate-spin">progress_activity</span>

@@ -59,6 +59,7 @@ export interface CreateParcelPayload {
   docType: string;
   description?: string;
   note?: string;
+  pin?: string;
 }
 
 export interface CreateParcelResponse {
@@ -110,6 +111,7 @@ export interface ConfirmReceiptPayload {
   location?: string;
   destLocation?: string;
   person?: string;
+  pin?: string;
 }
 
 export interface ConfirmReceiptResponse {

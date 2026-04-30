@@ -127,10 +127,11 @@ export async function createParcel(
   docType: string,
   description?: string,
   note?: string,
+  pin?: string,
 ): Promise<CreateParcelResponse> {
   const payload: CreateParcelPayload = {
     action: 'createParcel',
-    senderName, senderBranch, receiverName, receiverBranch, docType, description, note,
+    senderName, senderBranch, receiverName, receiverBranch, docType, description, note, pin
   };
   try {
     const res = await callAPI<Record<string, unknown>>(payload);
@@ -187,8 +188,9 @@ export async function confirmReceipt(
   location?: string,
   destLocation?: string,
   person?: string,
+  pin?: string,
 ): Promise<ConfirmReceiptResponse> {
-  const payload: ConfirmReceiptPayload = { action: 'confirmReceipt', trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person };
+  const payload: ConfirmReceiptPayload = { action: 'confirmReceipt', trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person, pin };
   try {
     return await callAPI<ConfirmReceiptResponse>(payload);
   } catch (err) {

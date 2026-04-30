@@ -86,6 +86,14 @@ function setup() {
     eventSheet.getRange("A1:K1").setFontWeight("bold");
     eventSheet.getRange("A1:K1").setBackground("#e0f2fe");
   }
+
+  let pinSheet = ss.getSheetByName("BranchPINs");
+  if (!pinSheet) {
+    pinSheet = ss.insertSheet("BranchPINs");
+    pinSheet.appendRow(["BranchName", "PIN"]);
+    pinSheet.getRange("A1:B1").setFontWeight("bold");
+    pinSheet.getRange("A1:B1").setBackground("#fee2e2"); // red-ish header
+  }
 }
 
 function getEventSheet() {
@@ -96,6 +104,26 @@ function getEventSheet() {
     eventSheet = ss.getSheetByName("ParcelEvents");
   }
   return eventSheet;
+}
+
+function verifyPin(branchName, pin) {
+  const ss = getSpreadsheet();
+  let pinSheet = ss.getSheetByName("BranchPINs");
+  if (!pinSheet) {
+    setup();
+    pinSheet = ss.getSheetByName("BranchPINs");
+  }
+  const data = pinSheet.getDataRange().getValues();
+  let correctPin = "0000"; // Default PIN is 0000 if not specified
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === String(branchName).trim()) {
+      if (String(data[i][1]).trim() !== "") {
+        correctPin = String(data[i][1]).trim();
+      }
+      break;
+    }
+  }
+  return String(pin).trim() === correctPin;
 }
 
 function doPost(e) {
@@ -143,6 +171,11 @@ function handleCreateParcel(payload) {
   if (!payload.senderName || !payload.senderBranch || !payload.receiverName || !payload.receiverBranch || !payload.docType) {
     return createJsonResponse({ success: false, error: "Missing required fields" });
   }
+
+  if (!verifyPin(payload.senderBranch, payload.pin)) {
+    return createJsonResponse({ success: false, error: "รหัส PIN ของสาขาไม่ถูกต้อง" });
+  }
+
   if (payload.note && String(payload.note).length > MAX_NOTE_LENGTH) {
     return createJsonResponse({ success: false, error: "Note is too long" });
   }
@@ -335,6 +368,11 @@ function handleConfirmReceipt(payload) {
   }
   if (!payload.photoUrl) {
     return createJsonResponse({ success: false, error: "Missing photoUrl" });
+  }
+
+  // Location must be provided by the frontend payload during forwarding or delivery
+  if (payload.location && !verifyPin(payload.location, payload.pin)) {
+    return createJsonResponse({ success: false, error: "รหัส PIN ของสาขาไม่ถูกต้อง" });
   }
   if (payload.note && String(payload.note).length > MAX_NOTE_LENGTH) {
     return createJsonResponse({ success: false, error: "Note is too long" });

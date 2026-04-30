@@ -62,6 +62,7 @@ export default function ConfirmReceipt({
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [pin, setPin] = useState('');
 
   const { position, status: geoStatus, errorMessage: geoError, requestLocation, reset: resetGeo } = useGeolocation();
 
@@ -277,7 +278,8 @@ export default function ConfirmReceipt({
         eventType,
         eventLocation,
         eventDestLocation,
-        eventPerson
+        eventPerson,
+        pin
       );
       if (response && response.success) {
         toast.success('บันทึกข้อมูลเรียบร้อยแล้ว');
@@ -848,6 +850,23 @@ export default function ConfirmReceipt({
                 <p className="text-sm text-on-surface italic">{note}</p>
               </div>
             )}
+
+            {/* PIN Input */}
+            <div className="bg-error/5 rounded-2xl p-4 border border-error/20">
+              <label className="text-sm font-bold text-error flex items-center gap-1.5 mb-2">
+                <span className="material-symbols-outlined text-[18px]">lock</span>
+                รหัส PIN ประจำสาขา
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={pin}
+                onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="กรอกรหัส 4 หลัก"
+                className="w-full h-12 bg-white border border-error/20 rounded-xl px-4 text-center tracking-[0.5em] text-xl font-bold font-mono focus:border-error focus:ring-2 focus:ring-error/20 outline-none transition-all placeholder:tracking-normal placeholder:text-sm placeholder:font-sans placeholder:font-normal"
+              />
+            </div>
           </div>
 
           {/* Footer */}
@@ -860,7 +879,7 @@ export default function ConfirmReceipt({
             </button>
             <button
               onClick={executeConfirm}
-              disabled={isLoading}
+              disabled={isLoading || pin.length < 4}
               className="flex-[2] flex items-center justify-center gap-2 h-12 bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
             >
               {isLoading ? (
