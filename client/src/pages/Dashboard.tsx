@@ -31,37 +31,35 @@ const STATS = [
 ] as const;
 
 const StatsCard = ({ label, icon, grad, text, count }: { label: string; icon: string; grad: string; text: string; count: number }) => (
-  <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 group cursor-default"
-    style={{ background: 'white' }}>
+  <div className="relative w-full overflow-hidden rounded-2xl p-4 sm:p-6 shadow-sm border bg-white hover:shadow-md transition-all duration-300 group cursor-default">
     {/* Gradient accent top */}
     <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${grad} rounded-t-2xl`} />
     <div className="flex items-start justify-between mt-1">
       <div>
-        <p className="text-[10px] sm:text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.15em] mb-1.5 sm:mb-2">{label}</p>
-        <div className="flex items-baseline gap-1">
+        <p className="text-[10px] sm:text-xs font-bold text-on-surface-variant/60 uppercase tracking-[0.15em] mb-1.5 sm:mb-2">{label}</p>
+        <div className="flex items-baseline gap-1.5">
           <span className="text-3xl sm:text-4xl font-black text-primary font-display">{count}</span>
           <span className="text-[10px] sm:text-xs text-on-surface-variant/40 font-bold">รายการ</span>
         </div>
       </div>
-      <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300`}>
-        <span className={`material-symbols-outlined text-base sm:text-xl ${text}`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-300`}>
+        <span className={`material-symbols-outlined text-lg sm:text-xl ${text}`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
       </div>
     </div>
   </div>
 );
 
 const TableSkeleton = () => (
-  <div className="space-y-0">
+  <div className="space-y-0 w-full">
     {[...Array(6)].map((_, i) => (
-      <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-outline-variant/10">
+      <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 px-4 sm:px-6 py-4 border-b border-outline-variant/10 w-full">
         <Skeleton className="h-8 w-28 rounded-lg" />
-        <div className="flex-1 space-y-1.5">
-          <Skeleton className="h-3.5 w-1/2" />
-          <Skeleton className="h-3 w-1/3" />
+        <div className="flex-1 space-y-2 w-full">
+          <Skeleton className="h-4 w-3/4 sm:w-1/2" />
+          <Skeleton className="h-3 w-1/2 sm:w-1/3" />
         </div>
-        <Skeleton className="h-3.5 w-20" />
-        <Skeleton className="h-6 w-20 rounded-full" />
-        <Skeleton className="h-3.5 w-16" />
+        <Skeleton className="h-4 w-20 hidden sm:block" />
+        <Skeleton className="h-6 w-24 rounded-full" />
       </div>
     ))}
   </div>
@@ -218,7 +216,7 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {STATS.map(s => (
           <StatsCard key={s.key} label={s.label} icon={s.icon} grad={s.grad} text={s.text}
             count={summary?.[s.key] ?? 0} />
@@ -226,7 +224,7 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
       </div>
 
       {/* ── Filters ── */}
-      <div className="bg-white/80 backdrop-blur-sm border border-outline-variant/40 rounded-2xl p-3 sm:p-4 shadow-sm">
+      <div className="bg-white/80 backdrop-blur-sm border border-outline-variant/40 rounded-2xl p-4 sm:p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Search */}
           <div className="relative flex-1 min-w-0">

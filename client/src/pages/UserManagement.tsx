@@ -50,7 +50,7 @@ export default function UserManagement() {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-outline-variant/20 shadow-xl overflow-hidden">
+      <div className="bg-white border border-outline-variant/40 rounded-2xl shadow-sm overflow-hidden w-full">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>

@@ -60,7 +60,7 @@ export default function Login({ onGuestAccess }: LoginProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 border border-outline-variant/20">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl sm:shadow-2xl p-6 sm:p-8 border border-outline-variant/20">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <span className="material-symbols-outlined text-3xl text-primary font-bold">local_shipping</span>

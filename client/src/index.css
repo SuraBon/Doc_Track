@@ -62,14 +62,7 @@
   --font-body: "Manrope", "IBM Plex Sans Thai", sans-serif;
   --font-mono: "Space Grotesk", monospace;
 
-  --spacing-xs: 8px;
-  --spacing-xl: 48px;
-  --spacing-container-padding: 32px;
-  --spacing-lg: 32px;
-  --spacing-md: 24px;
-  --spacing-sm: 16px;
-  --spacing-gutter: 24px;
-  --spacing-base: 4px;
+
 }
 
 :root {
