@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParcelStore } from '@/hooks/useParcelStore';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Parcel } from '@/types/parcel';
 import { formatThaiDate } from '@/lib/dateUtils';
 
@@ -11,6 +12,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }) => {
   const { parcels } = useParcelStore();
+  const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [seenIds, setSeenIds] = useState<Set<string>>(() => {
@@ -84,11 +86,12 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
   };
 
   const navItems = [
-    { id: "dashboard", label: "ภาพรวมระบบ", icon: "dashboard", badge: null },
-    { id: "create",    label: "สร้างรายการใหม่", icon: "add_box", badge: null },
-    { id: "confirm",   label: "ยืนยันรับพัสดุ", icon: "photo_camera", badge: null },
-    { id: "track",     label: "ติดตามสถานะ", icon: "location_searching", badge: null },
-  ];
+    { id: "dashboard", label: "ภาพรวมระบบ", icon: "dashboard", badge: null, roles: ['Admin', 'Manager'] },
+    { id: "create",    label: "สร้างรายการใหม่", icon: "add_box", badge: null, roles: ['Admin', 'Manager', 'User'] },
+    { id: "confirm",   label: "ยืนยันรับพัสดุ", icon: "photo_camera", badge: null, roles: ['Admin', 'Manager'] },
+    { id: "track",     label: "ติดตามสถานะ", icon: "location_searching", badge: null, roles: ['Admin', 'Manager', 'User', 'Guest'] },
+    { id: "users",     label: "จัดการผู้ใช้", icon: "manage_accounts", badge: null, roles: ['Admin'] },
+  ].filter(item => item.roles.includes(user?.role || 'Guest'));
 
   const handleNav = (id: string) => {
     setCurrentPage(id);
@@ -180,13 +183,38 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
 
         {/* Footer */}
         <div className="mt-auto pt-4 border-t border-white/5 space-y-1">
-          <a
-            className={`flex items-center ${isSidebarOpen ? 'gap-3 px-3' : 'justify-center'} py-2.5 text-white/30 hover:text-white/60 font-display text-sm font-semibold cursor-pointer hover:bg-white/5 rounded-xl transition-all`}
-            title={isSidebarOpen ? undefined : "ติดต่อช่วยเหลือ"}
-          >
-            <span className="material-symbols-outlined text-xl">contact_support</span>
-            {isSidebarOpen && "ติดต่อช่วยเหลือ"}
-          </a>
+          {user ? (
+            <>
+              <div className={`flex items-center ${isSidebarOpen ? 'gap-3 px-3' : 'justify-center'} py-2 mb-2 bg-white/5 rounded-xl`}>
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 text-white font-bold text-xs uppercase">
+                  {user.name.charAt(0)}
+                </div>
+                {isSidebarOpen && (
+                  <div className="flex flex-col min-w-0 overflow-hidden text-left">
+                    <span className="text-white text-xs font-bold truncate">{user.name}</span>
+                    <span className="text-white/40 text-[10px] truncate">{user.role} • {user.branch}</span>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={logout}
+                className={`w-full flex items-center ${isSidebarOpen ? 'gap-3 px-3' : 'justify-center'} py-2.5 text-error hover:text-error hover:bg-error/10 font-display text-sm font-semibold cursor-pointer rounded-xl transition-all`}
+                title={isSidebarOpen ? undefined : "ออกจากระบบ"}
+              >
+                <span className="material-symbols-outlined text-xl">logout</span>
+                {isSidebarOpen && "ออกจากระบบ"}
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => window.location.reload()}
+              className={`w-full flex items-center ${isSidebarOpen ? 'gap-3 px-3' : 'justify-center'} py-2.5 text-primary hover:text-primary hover:bg-primary/10 font-display text-sm font-semibold cursor-pointer rounded-xl transition-all`}
+              title={isSidebarOpen ? undefined : "เข้าสู่ระบบพนักงาน"}
+            >
+              <span className="material-symbols-outlined text-xl">login</span>
+              {isSidebarOpen && "เข้าสู่ระบบพนักงาน"}
+            </button>
+          )}
         </div>
       </aside>
 

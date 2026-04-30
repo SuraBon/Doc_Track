@@ -95,9 +95,20 @@ async function callAPI<T>(payload: object): Promise<T> {
 
   let response: Response;
   try {
+    let authData = {};
+    const storedUser = localStorage.getItem('doc_track_user');
+    if (storedUser) {
+      try {
+        const u = JSON.parse(storedUser);
+        authData = { employeeId: u.employeeId, role: u.role };
+      } catch (e) {
+        // ignore
+      }
+    }
+
     response = await fetch(GAS_URL, {
       method: 'POST',
-      body: JSON.stringify({ ...payload, apiKey: GAS_API_KEY }),
+      body: JSON.stringify({ ...authData, ...payload, apiKey: GAS_API_KEY }),
       // GAS requires text/plain to avoid CORS preflight
       headers: { 'Content-Type': 'text/plain' },
     });
@@ -221,5 +232,67 @@ export async function exportSummary(): Promise<ParcelSummary | null> {
     return res.summary ?? null;
   } catch {
     return null;
+  }
+}
+
+// --- Users & RBAC ---
+
+export interface User {
+  employeeId: string;
+  name: string;
+  branch: string;
+  role: 'User' | 'Manager' | 'Admin';
+}
+
+export interface UserRow extends User {
+  hasPin: boolean;
+  createdAt: string;
+}
+
+export async function login(employeeId: string, pin?: string): Promise<{ success: boolean, needsSetup?: boolean, user?: User, error?: string, role?: string, name?: string, branch?: string }> {
+  try {
+    return await callAPI({ action: 'login', employeeId, pin });
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'เกิดข้อผิดพลาด' };
+  }
+}
+
+export async function setupPin(employeeId: string, pin: string, name: string, branch: string): Promise<{ success: boolean, user?: User, error?: string }> {
+  try {
+    return await callAPI({ action: 'setupPin', employeeId, pin, name, branch });
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'เกิดข้อผิดพลาด' };
+  }
+}
+
+export async function getUsers(): Promise<{ success: boolean, users?: UserRow[], error?: string }> {
+  try {
+    return await callAPI({ action: 'getUsers' });
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'เกิดข้อผิดพลาด' };
+  }
+}
+
+export async function updateUserRole(targetId: string, newRole: string): Promise<{ success: boolean, error?: string }> {
+  try {
+    return await callAPI({ action: 'updateUserRole', targetId, newRole });
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'เกิดข้อผิดพลาด' };
+  }
+}
+
+export async function deleteParcel(trackingID: string): Promise<{ success: boolean, error?: string }> {
+  try {
+    return await callAPI({ action: 'deleteParcel', trackingID });
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'เกิดข้อผิดพลาด' };
+  }
+}
+
+export async function editParcel(trackingID: string, updates: Partial<Record<string, string>>): Promise<{ success: boolean, error?: string }> {
+  try {
+    return await callAPI({ action: 'editParcel', trackingID, updates });
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'เกิดข้อผิดพลาด' };
   }
 }

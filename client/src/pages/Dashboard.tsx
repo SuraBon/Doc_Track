@@ -4,6 +4,8 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParcelStore } from '@/hooks/useParcelStore';
+import { useAuth } from '@/contexts/AuthContext';
+import { deleteParcel } from '@/lib/parcelService';
 import { useDebounce } from '@/hooks/useDebounce';
 import StatusBadge from '@/components/StatusBadge';
 import type { Parcel } from '@/types/parcel';
@@ -65,6 +67,7 @@ const TableSkeleton = () => (
 );
 
 export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardProps) {
+  const { user } = useAuth();
   const { parcels, summary, loading, loadParcels, hasMore, totalCount, loadMoreParcels } = useParcelStore();
   const [filteredParcels, setFilteredParcels] = useState<Parcel[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -154,6 +157,20 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
 
   const clearFilters = () => { setSearchTerm(''); setStatusFilter('ทั้งหมด'); setCurrentPage(1); };
   const hasFilters = !!(searchTerm || statusFilter !== 'ทั้งหมด');
+
+  const handleDelete = async () => {
+    if (!selectedParcel) return;
+    if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบรายการ ${selectedParcel.TrackingID}?`)) {
+      const res = await deleteParcel(selectedParcel.TrackingID);
+      if (res.success) {
+        toast.success('ลบรายการสำเร็จ');
+        setIsTimelineOpen(false);
+        loadParcels(true); // refresh
+      } else {
+        toast.error('ไม่สามารถลบรายการได้');
+      }
+    }
+  };
 
   if (!isConfigured) {
     return (
@@ -519,6 +536,17 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
                           <p className="text-sm text-primary font-medium leading-relaxed bg-surface-container-low/50 rounded-xl p-3 border border-outline-variant/20">
                             {selectedParcel['รายละเอียด']}
                           </p>
+                        </div>
+                      )}
+                      {user?.role === 'Admin' && (
+                        <div className="mt-4 pt-4 border-t border-outline-variant/10 flex gap-3">
+                          <button
+                            onClick={handleDelete}
+                            className="flex-1 flex items-center justify-center gap-1.5 bg-error/10 text-error font-bold py-2 rounded-xl hover:bg-error hover:text-white transition-colors text-sm"
+                          >
+                            <span className="material-symbols-outlined text-base">delete</span>
+                            ลบรายการนี้
+                          </button>
                         </div>
                       )}
                     </div>

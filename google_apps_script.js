@@ -92,8 +92,28 @@ function setup() {
     pinSheet = ss.insertSheet("BranchPINs");
     pinSheet.appendRow(["BranchName", "PIN"]);
     pinSheet.getRange("A1:B1").setFontWeight("bold");
-    pinSheet.getRange("A1:B1").setBackground("#fee2e2"); // red-ish header
+    pinSheet.getRange("A1:B1").setBackground("#fee2e2");
   }
+
+  let usersSheet = ss.getSheetByName("Users");
+  if (!usersSheet) {
+    usersSheet = ss.insertSheet("Users");
+    usersSheet.appendRow(["EmployeeID", "Name", "Branch", "Role", "PIN", "CreatedAt"]);
+    usersSheet.getRange("A1:F1").setFontWeight("bold");
+    usersSheet.getRange("A1:F1").setBackground("#fef3c7");
+    // Add default admin
+    usersSheet.appendRow(["admin", "System Admin", "HQ", "Admin", "1234", new Date()]);
+  }
+}
+
+function getUsersSheet() {
+  const ss = getSpreadsheet();
+  let usersSheet = ss.getSheetByName("Users");
+  if (!usersSheet) {
+    setup();
+    usersSheet = ss.getSheetByName("Users");
+  }
+  return usersSheet;
 }
 
 function getEventSheet() {
@@ -150,6 +170,18 @@ function doPost(e) {
       return handleConfirmReceipt(payload);
     } else if (action === 'searchParcels') {
       return handleSearchParcels(payload);
+    } else if (action === 'login') {
+      return handleLogin(payload);
+    } else if (action === 'setupPin') {
+      return handleSetupPin(payload);
+    } else if (action === 'getUsers') {
+      return handleGetUsers(payload);
+    } else if (action === 'updateUserRole') {
+      return handleUpdateUserRole(payload);
+    } else if (action === 'deleteParcel') {
+      return handleDeleteParcel(payload);
+    } else if (action === 'editParcel') {
+      return handleEditParcel(payload);
     }
 
     return createJsonResponse({ success: false, error: "Invalid action" });
@@ -201,7 +233,8 @@ function handleCreateParcel(payload) {
     "รอจัดส่ง",
     "",
     "",
-    ""
+    "",
+    payload.employeeId || ""
   ]);
 
   const eventSheet = getEventSheet();
@@ -268,6 +301,14 @@ function handleGetParcels(payload) {
 
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
+
+    if (payload.role === 'User') {
+      const creatorId = String(row[13] || "").trim();
+      if (creatorId !== String(payload.employeeId).trim()) {
+        continue;
+      }
+    }
+
     if (payload.status === "ทั้งหมด" || !payload.status || row[9] === payload.status) {
       allFiltered.push(row);
     }
@@ -563,6 +604,144 @@ function setupApiKey(value) {
 function createJsonResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- RBAC & Users ---
+
+function handleLogin(payload) {
+  const employeeId = String(payload.employeeId || "").trim();
+  const pin = String(payload.pin || "").trim();
+  if (!employeeId) return createJsonResponse({ success: false, error: "Missing employee ID" });
+
+  const sheet = getUsersSheet();
+  const data = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === employeeId) {
+      const storedPin = String(data[i][4] || "").trim();
+      const role = String(data[i][3]).trim() || "User";
+      const name = String(data[i][1]).trim();
+      const branch = String(data[i][2]).trim();
+
+      if (!storedPin) {
+        return createJsonResponse({ success: true, needsSetup: true, role, name, branch });
+      }
+
+      if (storedPin !== pin) {
+        return createJsonResponse({ success: false, error: "รหัส PIN ไม่ถูกต้อง" });
+      }
+
+      return createJsonResponse({ success: true, user: { employeeId, name, branch, role } });
+    }
+  }
+
+  // Auto-create new user if not found (can set role to User)
+  // For security, you might want to restrict this in production.
+  sheet.appendRow([employeeId, "Unknown", "Unknown", "User", "", new Date()]);
+  return createJsonResponse({ success: true, needsSetup: true, role: "User", name: "Unknown", branch: "Unknown" });
+}
+
+function handleSetupPin(payload) {
+  const employeeId = String(payload.employeeId || "").trim();
+  const pin = String(payload.pin || "").trim();
+  const name = String(payload.name || "").trim();
+  const branch = String(payload.branch || "").trim();
+
+  if (!employeeId || !pin) return createJsonResponse({ success: false, error: "Missing required fields" });
+
+  const sheet = getUsersSheet();
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === employeeId) {
+      // Allow overriding name/branch during setup
+      if (name) sheet.getRange(i + 1, 2).setValue(name);
+      if (branch) sheet.getRange(i + 1, 3).setValue(branch);
+      sheet.getRange(i + 1, 5).setValue(pin);
+      
+      const role = String(data[i][3]).trim() || "User";
+      const finalName = name || String(data[i][1]).trim();
+      const finalBranch = branch || String(data[i][2]).trim();
+
+      return createJsonResponse({ success: true, user: { employeeId, name: finalName, branch: finalBranch, role } });
+    }
+  }
+  return createJsonResponse({ success: false, error: "User not found" });
+}
+
+function handleGetUsers(payload) {
+  const sheet = getUsersSheet();
+  const data = sheet.getDataRange().getValues();
+  const users = [];
+  const headers = data[0];
+  
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    users.push({
+      employeeId: String(row[0]),
+      name: String(row[1]),
+      branch: String(row[2]),
+      role: String(row[3]),
+      hasPin: !!String(row[4]).trim(),
+      createdAt: row[5] ? Utilities.formatDate(new Date(row[5]), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss") : ""
+    });
+  }
+  return createJsonResponse({ success: true, users });
+}
+
+function handleUpdateUserRole(payload) {
+  const { targetId, newRole } = payload;
+  if (!targetId || !newRole) return createJsonResponse({ success: false, error: "Missing fields" });
+
+  const sheet = getUsersSheet();
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === targetId) {
+      sheet.getRange(i + 1, 4).setValue(newRole);
+      return createJsonResponse({ success: true });
+    }
+  }
+  return createJsonResponse({ success: false, error: "User not found" });
+}
+
+function handleDeleteParcel(payload) {
+  const { trackingID } = payload;
+  if (!trackingID) return createJsonResponse({ success: false, error: "Missing trackingID" });
+
+  const sheet = getSpreadsheet().getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === trackingID) {
+      sheet.deleteRow(i + 1);
+      return createJsonResponse({ success: true });
+    }
+  }
+  return createJsonResponse({ success: false, error: "Parcel not found" });
+}
+
+function handleEditParcel(payload) {
+  const { trackingID, updates } = payload;
+  if (!trackingID || !updates) return createJsonResponse({ success: false, error: "Missing fields" });
+
+  const sheet = getSpreadsheet().getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === trackingID) {
+      const rowIndex = i + 1;
+      
+      if (updates.senderName) sheet.getRange(rowIndex, headers.indexOf("ผู้ส่ง") + 1).setValue(updates.senderName);
+      if (updates.senderBranch) sheet.getRange(rowIndex, headers.indexOf("สาขาผู้ส่ง") + 1).setValue(updates.senderBranch);
+      if (updates.receiverName) sheet.getRange(rowIndex, headers.indexOf("ผู้รับ") + 1).setValue(updates.receiverName);
+      if (updates.receiverBranch) sheet.getRange(rowIndex, headers.indexOf("สาขาผู้รับ") + 1).setValue(updates.receiverBranch);
+      if (updates.docType) sheet.getRange(rowIndex, headers.indexOf("ประเภทเอกสาร") + 1).setValue(updates.docType);
+      if (updates.description) sheet.getRange(rowIndex, headers.indexOf("รายละเอียด") + 1).setValue(updates.description);
+      
+      return createJsonResponse({ success: true });
+    }
+  }
+  return createJsonResponse({ success: false, error: "Parcel not found" });
 }
 
 function doOptions(e) {
