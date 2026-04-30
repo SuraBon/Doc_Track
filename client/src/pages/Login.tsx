@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowRight, PackageSearch, Search, ShieldCheck, Truck, UserRound } from 'lucide-react';
+import { ArrowRight, PackageSearch, Search, ShieldCheck, UserRound } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getParcel, searchParcels } from '@/lib/parcelService';
 import StatusBadge from '@/components/StatusBadge';
@@ -10,7 +10,7 @@ import type { Parcel } from '@/types/parcel';
 
 const DEMO_ACCOUNTS = [
   { role: 'User', username: 'user_test', password: 'user123', Icon: UserRound },
-  { role: 'Messenger', username: 'messenger_test', password: 'messenger123', Icon: Truck },
+  { role: 'Messenger', username: 'messenger_test', password: 'messenger123', Icon: UserRound },
   { role: 'Admin', username: 'admin_test', password: 'admin123', Icon: ShieldCheck },
 ];
 
@@ -125,7 +125,7 @@ export default function Login() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl sm:shadow-2xl p-6 sm:p-8 border border-outline-variant/20">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Truck className="h-8 w-8 text-primary" aria-hidden="true" />
+            <PackageSearch className="h-8 w-8 text-primary" aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-black font-display text-primary">
             {isSetup ? 'ตั้งค่าการเข้าใช้งาน' : 'เข้าสู่ระบบ'}

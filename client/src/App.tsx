@@ -25,7 +25,7 @@ const pagePaths: Record<PageId, string> = {
 };
 
 const pathPages: Record<string, PageId> = {
-  "/": "track",
+  "/": "dashboard",
   "/dashboard": "dashboard",
   "/create": "create",
   "/confirm": "confirm",
@@ -36,7 +36,7 @@ const pathPages: Record<string, PageId> = {
 const getRouteFromLocation = (): { page: PageId; isKnownPath: boolean } => {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
   const page = pathPages[path];
-  return page ? { page, isKnownPath: true } : { page: "track", isKnownPath: false };
+  return page ? { page, isKnownPath: true } : { page: "dashboard", isKnownPath: false };
 };
 
 const pageRoles: Record<PageId, AppRole[]> = {
@@ -98,7 +98,7 @@ function App() {
 
     const role = normalizeRole(user.role);
     if (!canAccessPage(currentPage, role)) {
-      navigateToPage("track");
+      navigateToPage("dashboard");
     }
   }, [currentPage, loading, navigateToPage, user]);
 
@@ -122,7 +122,7 @@ function App() {
   }
 
   const role = normalizeRole(user.role);
-  const visiblePage = canAccessPage(currentPage, role) ? currentPage : "track";
+  const visiblePage = canAccessPage(currentPage, role) ? currentPage : "dashboard";
   const renderCurrentPage = () => {
     switch (visiblePage) {
       case "dashboard":
