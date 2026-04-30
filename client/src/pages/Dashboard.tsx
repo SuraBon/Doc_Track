@@ -358,9 +358,6 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
                     </td>
                     <td className="px-4 py-3.5 text-on-surface-variant">
                       <span className="text-sm font-medium">{formatThaiDate(parcel['วันที่สร้าง'])}</span>
-                      {parcel['วันที่สร้าง'].includes(' ') && (
-                        <div className="text-[10px] font-mono opacity-50 mt-0.5">{parcel['วันที่สร้าง'].split(' ')[1]}</div>
-                      )}
                     </td>
                     <td className="px-4 py-3.5">
                       <StatusBadge status={parcel['สถานะ']} />

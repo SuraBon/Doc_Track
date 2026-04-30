@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo, memo } from 'react';
 import L from 'leaflet';
 import { MapView } from './Map';
 import type { TimelineEvent } from '@/types/timeline';
+import { formatThaiDate } from '@/lib/dateUtils';
 
 const BRANCH_COORDS: Record<string, { lat: number; lng: number }> = {
   'MS':                   { lat: 13.6863417, lng: 100.5473102 },
@@ -137,6 +138,7 @@ function TrackingMap({ events }: TrackingMapProps) {
 
     pathEntries.forEach((entry) => {
       const { lat, lng, label, isGps, isLast, event } = entry;
+      const eventDate = event.timestamp ? formatThaiDate(event.timestamp) : '';
       const safeLabel     = escapeHtml(label || 'GPS');
       const iconName      = isLast ? 'local_shipping' : isGps ? 'my_location' : 'location_on';
       const bgClass       = isLast
@@ -150,7 +152,7 @@ function TrackingMap({ events }: TrackingMapProps) {
           <span class="material-symbols-outlined text-xs">${iconName}</span>
           <span class="truncate max-w-[80px]">${safeLabel}</span>
         </div>
-        ${event.timestamp ? `<div class="text-[8px] text-white/90 font-bold mt-0.5 whitespace-nowrap">${event.timestamp}</div>` : ''}
+        ${eventDate ? `<div class="text-[8px] text-white/90 font-bold mt-0.5 whitespace-nowrap">${escapeHtml(eventDate)}</div>` : ''}
       </div>`;
 
       const marker = L.marker([lat, lng], {
@@ -185,10 +187,10 @@ function TrackingMap({ events }: TrackingMapProps) {
       }
 
       // Show timestamp if available
-      if (event.timestamp) {
+      if (eventDate) {
         const time = document.createElement('div');
         time.style.cssText = 'margin-top:6px;font-size:11px;color:#61646b;font-weight:500';
-        time.textContent = `🕐 ${event.timestamp}`;
+        time.textContent = eventDate;
         popupEl.appendChild(time);
       }
 

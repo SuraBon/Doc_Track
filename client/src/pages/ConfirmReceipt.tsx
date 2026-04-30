@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useParcelStore } from '@/hooks/useParcelStore';
 import PinInput from '@/components/PinInput';
 import { getBranches, getParcel } from '@/lib/parcelService';
-import { formatThaiDateTime } from '@/lib/dateUtils';
 import { toast } from 'sonner';
 import type { Parcel } from '@/types/parcel';
 import { useGeolocation } from '@/hooks/useGeolocation';

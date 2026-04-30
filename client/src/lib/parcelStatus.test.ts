@@ -4,7 +4,7 @@ import type { Parcel } from '@/types/parcel';
 
 const baseParcel: Parcel = {
   TrackingID: 'TRK1',
-  'วันที่สร้าง': '2026-01-01',
+  'วันที่สร้าง': '1 มกราคม 2569',
   'ผู้ส่ง': 'A',
   'สาขาผู้ส่ง': 'ศูนย์ใหญ่บางนา',
   'ผู้รับ': 'B',
@@ -17,7 +17,7 @@ describe('parcelStatus', () => {
   it('keeps delivered when final note is receive', () => {
     const parcel = applyDerivedStatus({
       ...baseParcel,
-      'หมายเหตุ': '[รับพัสดุเรียบร้อย เมื่อ: 2026-01-01]',
+      'หมายเหตุ': '[รับพัสดุเรียบร้อย เมื่อ: 1 มกราคม 2569]',
     });
     expect(parcel['สถานะ']).toBe('ส่งถึงแล้ว');
   });
@@ -25,7 +25,7 @@ describe('parcelStatus', () => {
   it('changes to transit when last note is forwarding', () => {
     const parcel = applyDerivedStatus({
       ...baseParcel,
-      'หมายเหตุ': '[รับพัสดุเรียบร้อย เมื่อ: 2026-01-01] [ส่งต่อโดย: x จากสาขา: a ไปสาขา: b เมื่อ: 2026-01-02]',
+      'หมายเหตุ': '[รับพัสดุเรียบร้อย เมื่อ: 1 มกราคม 2569] [ส่งต่อโดย: x จากสาขา: a ไปสาขา: b เมื่อ: 2 มกราคม 2569]',
     });
     expect(parcel['สถานะ']).toBe('กำลังจัดส่ง');
   });

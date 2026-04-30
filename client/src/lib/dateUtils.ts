@@ -7,6 +7,38 @@ const THAI_MONTHS = [
   'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
 ];
 
+const THAI_MONTH_INDEX = new Map(THAI_MONTHS.map((month, index) => [month, index]));
+
+export function parseDateInput(dateStr: string): Date | null {
+  if (!dateStr) return null;
+
+  const text = dateStr.trim();
+  const thaiMatch = text.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (thaiMatch) {
+    const [, dayText, monthText, yearText, hourText, minuteText] = thaiMatch;
+    const monthIndex = THAI_MONTH_INDEX.get(monthText);
+    if (monthIndex !== undefined) {
+      const buddhistOrChristianYear = Number(yearText);
+      const year = buddhistOrChristianYear > 2400 ? buddhistOrChristianYear - 543 : buddhistOrChristianYear;
+      const date = new Date(
+        year,
+        monthIndex,
+        Number(dayText),
+        hourText ? Number(hourText) : 0,
+        minuteText ? Number(minuteText) : 0,
+      );
+      return isNaN(date.getTime()) ? null : date;
+    }
+  }
+
+  const date = new Date(text.replace(' ', 'T'));
+  return isNaN(date.getTime()) ? null : date;
+}
+
+export function getDateTime(dateStr: string): number {
+  return parseDateInput(dateStr)?.getTime() ?? 0;
+}
+
 /**
  * Format date string to Thai long format: 27 เมษายน 2569
  * @param dateStr ISO date string or date-time string
@@ -16,11 +48,9 @@ export function formatThaiDate(dateStr: string): string {
   if (!dateStr) return '-';
   
   try {
-    // Handle format "YYYY-MM-DD HH:mm:ss" or ISO
-    const cleanDateStr = dateStr.replace(' ', 'T');
-    const date = new Date(cleanDateStr);
+    const date = parseDateInput(dateStr);
     
-    if (isNaN(date.getTime())) return dateStr;
+    if (!date) return dateStr;
 
     const day = date.getDate();
     const month = THAI_MONTHS[date.getMonth()];
@@ -33,26 +63,8 @@ export function formatThaiDate(dateStr: string): string {
 }
 
 /**
- * Format date-time to Thai format with time
+ * Format date-time values with the app-wide Thai date-only format.
  */
 export function formatThaiDateTime(dateStr: string): string {
-  if (!dateStr) return '-';
-  
-  try {
-    const cleanDateStr = dateStr.replace(' ', 'T');
-    const date = new Date(cleanDateStr);
-    
-    if (isNaN(date.getTime())) return dateStr;
-
-    // ✅ FIX: reuse parsed date instead of calling formatThaiDate (which re-parses)
-    const day = date.getDate();
-    const month = THAI_MONTHS[date.getMonth()];
-    const year = date.getFullYear() + 543;
-    const datePart = `${day} ${month} ${year}`;
-    const timePart = date.toTimeString().split(' ')[0].substring(0, 5); // HH:mm
-
-    return `${datePart} ${timePart}`;
-  } catch {
-    return dateStr;
-  }
+  return formatThaiDate(dateStr);
 }

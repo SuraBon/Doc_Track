@@ -95,29 +95,29 @@ export default function Track() {
   }, [parcel]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-6xl mx-auto space-y-5 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       {/* Header */}
-      <section className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/75 p-5 sm:p-7 shadow-sm backdrop-blur-xl">
-        <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-primary-fixed/60 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-28 w-2/3 bg-gradient-to-r from-secondary-container/15 to-transparent" />
-        <div className="relative grid gap-6 lg:grid-cols-[1fr_340px] lg:items-end">
-          <div>
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/20">
-              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>location_searching</span>
+      <section className="rounded-2xl border border-outline-variant/25 bg-white/90 px-5 py-5 shadow-sm backdrop-blur-xl sm:px-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-sm">
+              <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>location_searching</span>
             </div>
-            <h1 className="font-display text-3xl sm:text-4xl font-black text-primary">ติดตามพัสดุ</h1>
-            <p className="mt-2 max-w-xl text-sm text-on-surface-variant">ค้นหาและติดตามสถานะการจัดส่งแบบเรียลไทม์</p>
+            <div>
+              <h1 className="font-display text-3xl font-black leading-tight text-primary sm:text-[34px]">ติดตามพัสดุ</h1>
+              <p className="mt-1 text-sm text-on-surface-variant/75">ค้นหาสถานะพัสดุจากหมายเลขติดตาม หรือชื่อผู้รับ</p>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-outline-variant/30 bg-white/70 p-2 shadow-sm">
+          <div className="grid grid-cols-3 gap-2 rounded-2xl bg-surface-container-lowest p-1.5 ring-1 ring-outline-variant/20 lg:w-[340px]">
             {[
               { icon: 'manage_search', label: 'ค้นหาเร็ว' },
               { icon: 'route', label: 'ดูเส้นทาง' },
               { icon: 'history', label: 'ประวัติล่าสุด' },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl bg-surface-container-lowest px-2 py-3 text-center">
-                <span className="material-symbols-outlined text-lg text-primary">{item.icon}</span>
-                <p className="mt-1 text-[10px] font-black text-on-surface-variant/60">{item.label}</p>
+              <div key={item.label} className="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-primary">
+                <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                <p className="hidden text-xs font-bold text-on-surface-variant/70 sm:block">{item.label}</p>
               </div>
             ))}
           </div>
@@ -125,26 +125,25 @@ export default function Track() {
       </section>
 
       {/* Search box */}
-      <div className="bg-white/95 backdrop-blur-sm border border-outline-variant/40 rounded-2xl p-4 sm:p-5 shadow-sm">
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+      <div className="rounded-2xl border border-outline-variant/25 bg-white/95 p-3 shadow-sm backdrop-blur-sm sm:p-4">
+        <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1 group">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-xl transition-colors group-focus-within:text-primary">search</span>
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-xl text-on-surface-variant/45 transition-colors group-focus-within:text-primary">search</span>
             <input
               placeholder="กรอกหมายเลขติดตาม หรือชื่อผู้รับ..."
               value={trackingId}
               onChange={e => setTrackingId(e.target.value.toUpperCase())}
               autoFocus
-              className="w-full h-14 pl-11 pr-12 text-base sm:text-lg font-display bg-surface-container-lowest border-2 border-outline-variant/60 focus:border-primary focus:ring-4 focus:ring-primary/8 rounded-2xl outline-none transition-all placeholder:text-outline-variant/50"
+              className="h-13 w-full rounded-xl border border-outline-variant/40 bg-surface-container-lowest pl-11 pr-12 text-base font-semibold text-primary outline-none transition-all placeholder:font-medium placeholder:text-outline-variant/55 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/8 sm:h-14"
             />
             <button type="button" onClick={handlePaste}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-xl text-on-surface-variant/40 hover:text-primary hover:bg-surface-container transition-all"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-on-surface-variant/45 transition-all hover:bg-surface-container hover:text-primary"
               title="วางจากคลิปบอร์ด">
               <span className="material-symbols-outlined text-xl">content_paste</span>
             </button>
           </div>
           <button type="submit" disabled={isLoading}
-            className="h-14 px-6 sm:px-8 rounded-2xl font-display font-bold text-sm sm:text-base text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:opacity-95 active:scale-95 transition-all disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #091426 0%, #1e3a5f 100%)' }}>
+            className="h-13 rounded-xl bg-primary px-6 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary/95 active:scale-[0.98] disabled:opacity-50 sm:h-14 sm:px-8">
             {isLoading
               ? <span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>
               : 'ติดตามพัสดุ'}

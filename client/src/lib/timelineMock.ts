@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Timeline Mock Data
  * ข้อมูลตัวอย่างสำหรับการแสดง Timeline
  */
@@ -9,14 +9,14 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
   'TRK20260420001': {
     trackingId: 'TRK20260420001',
     currentStatus: 'กำลังจัดส่ง',
-    estimatedDelivery: '20 เมษายน 2026',
+    estimatedDelivery: '20 เมษายน 2569',
     events: [
       {
         id: '1',
         status: 'completed',
         title: 'รายการถูกสร้าง',
         description: 'พัสดุถูกบันทึกเข้าระบบ',
-        timestamp: '18 เมษายน 2026 09:30',
+        timestamp: '18 เมษายน 2569',
         location: 'สำนักงานใหญ่',
       },
       {
@@ -24,7 +24,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'completed',
         title: 'เตรียมพัสดุ',
         description: 'พัสดุกำลังเตรียมสำหรับการจัดส่ง',
-        timestamp: '18 เมษายน 2026 14:15',
+        timestamp: '18 เมษายน 2569',
         location: 'สำนักงานใหญ่',
       },
       {
@@ -32,7 +32,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'completed',
         title: 'ออกจากสาขาต้นทาง',
         description: 'พัสดุถูกส่งออกจากสาขา',
-        timestamp: '19 เมษายน 2026 08:00',
+        timestamp: '19 เมษายน 2569',
         location: 'สำนักงานใหญ่',
       },
       {
@@ -40,7 +40,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'completed',
         title: 'ถึงศูนย์กระจาย',
         description: 'พัสดุถึงศูนย์กระจายส่วนกลาง',
-        timestamp: '19 เมษายน 2026 16:45',
+        timestamp: '19 เมษายน 2569',
         location: 'ศูนย์กระจายส่วนกลาง',
       },
       {
@@ -48,7 +48,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'current',
         title: 'กำลังจัดส่ง',
         description: 'พัสดุกำลังอยู่ในเส้นทางจัดส่ง',
-        timestamp: '20 เมษายน 2026 10:30',
+        timestamp: '20 เมษายน 2569',
         location: 'สาขาเชียงใหม่',
       },
       {
@@ -56,7 +56,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'pending',
         title: 'ส่งถึงสาขาปลายทาง',
         description: 'พัสดุจะถึงสาขาปลายทาง',
-        timestamp: '20 เมษายน 2026 (คาดว่า)',
+        timestamp: '20 เมษายน 2569',
         location: 'สาขาเชียงใหม่',
       },
       {
@@ -64,7 +64,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'pending',
         title: 'ส่งถึงผู้รับ',
         description: 'พัสดุจะส่งถึงผู้รับ',
-        timestamp: '20 เมษายน 2026 (คาดว่า)',
+        timestamp: '20 เมษายน 2569',
         location: 'ที่อยู่ผู้รับ',
       },
     ],
@@ -72,14 +72,14 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
   'TRK20260419002': {
     trackingId: 'TRK20260419002',
     currentStatus: 'ส่งถึงแล้ว',
-    estimatedDelivery: '19 เมษายน 2026',
+    estimatedDelivery: '19 เมษายน 2569',
     events: [
       {
         id: '1',
         status: 'completed',
         title: 'รายการถูกสร้าง',
         description: 'พัสดุถูกบันทึกเข้าระบบ',
-        timestamp: '17 เมษายน 2026 10:00',
+        timestamp: '17 เมษายน 2569',
         location: 'สาขากรุงเทพ',
       },
       {
@@ -87,7 +87,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'completed',
         title: 'เตรียมพัสดุ',
         description: 'พัสดุกำลังเตรียมสำหรับการจัดส่ง',
-        timestamp: '17 เมษายน 2026 15:30',
+        timestamp: '17 เมษายน 2569',
         location: 'สาขากรุงเทพ',
       },
       {
@@ -95,7 +95,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'completed',
         title: 'ออกจากสาขาต้นทาง',
         description: 'พัสดุถูกส่งออกจากสาขา',
-        timestamp: '18 เมษายน 2026 07:00',
+        timestamp: '18 เมษายน 2569',
         location: 'สาขากรุงเทพ',
       },
       {
@@ -103,7 +103,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'completed',
         title: 'ถึงศูนย์กระจาย',
         description: 'พัสดุถึงศูนย์กระจายส่วนกลาง',
-        timestamp: '18 เมษายน 2026 18:00',
+        timestamp: '18 เมษายน 2569',
         location: 'ศูนย์กระจายส่วนกลาง',
       },
       {
@@ -111,7 +111,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'completed',
         title: 'ส่งถึงสาขาปลายทาง',
         description: 'พัสดุถึงสาขาปลายทาง',
-        timestamp: '19 เมษายน 2026 09:00',
+        timestamp: '19 เมษายน 2569',
         location: 'สาขาขอนแก่น',
       },
       {
@@ -119,7 +119,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'completed',
         title: 'ส่งถึงผู้รับ',
         description: 'พัสดุส่งถึงผู้รับเรียบร้อย',
-        timestamp: '19 เมษายน 2026 14:30',
+        timestamp: '19 เมษายน 2569',
         location: 'ที่อยู่ผู้รับ',
       },
     ],
@@ -127,14 +127,14 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
   'TRK20260420003': {
     trackingId: 'TRK20260420003',
     currentStatus: 'รอจัดส่ง',
-    estimatedDelivery: '22 เมษายน 2026',
+    estimatedDelivery: '22 เมษายน 2569',
     events: [
       {
         id: '1',
         status: 'completed',
         title: 'รายการถูกสร้าง',
         description: 'พัสดุถูกบันทึกเข้าระบบ',
-        timestamp: '20 เมษายน 2026 11:00',
+        timestamp: '20 เมษายน 2569',
         location: 'สาขาขอนแก่น',
       },
       {
@@ -142,7 +142,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'current',
         title: 'เตรียมพัสดุ',
         description: 'พัสดุกำลังเตรียมสำหรับการจัดส่ง',
-        timestamp: '20 เมษายน 2026 (ปัจจุบัน)',
+        timestamp: '20 เมษายน 2569',
         location: 'สาขาขอนแก่น',
       },
       {
@@ -150,7 +150,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'pending',
         title: 'ออกจากสาขาต้นทาง',
         description: 'พัสดุจะถูกส่งออกจากสาขา',
-        timestamp: '21 เมษายน 2026 (คาดว่า)',
+        timestamp: '21 เมษายน 2569',
         location: 'สาขาขอนแก่น',
       },
       {
@@ -158,7 +158,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'pending',
         title: 'ถึงศูนย์กระจาย',
         description: 'พัสดุจะถึงศูนย์กระจายส่วนกลาง',
-        timestamp: '21 เมษายน 2026 (คาดว่า)',
+        timestamp: '21 เมษายน 2569',
         location: 'ศูนย์กระจายส่วนกลาง',
       },
       {
@@ -166,7 +166,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'pending',
         title: 'ส่งถึงสาขาปลายทาง',
         description: 'พัสดุจะถึงสาขาปลายทาง',
-        timestamp: '22 เมษายน 2026 (คาดว่า)',
+        timestamp: '22 เมษายน 2569',
         location: 'สาขาเชียงใหม่',
       },
       {
@@ -174,7 +174,7 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
         status: 'pending',
         title: 'ส่งถึงผู้รับ',
         description: 'พัสดุจะส่งถึงผู้รับ',
-        timestamp: '22 เมษายน 2026 (คาดว่า)',
+        timestamp: '22 เมษายน 2569',
         location: 'ที่อยู่ผู้รับ',
       },
     ],
@@ -184,3 +184,4 @@ export const mockTimelineData: Record<string, ParcelTimeline> = {
 export function getMockTimeline(trackingId: string) {
   return mockTimelineData[trackingId] || null;
 }
+

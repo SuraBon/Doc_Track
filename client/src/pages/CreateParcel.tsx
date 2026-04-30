@@ -10,6 +10,7 @@ import { getBranches } from '@/lib/parcelService';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import PinInput from '@/components/PinInput';
+import { formatThaiDate } from '@/lib/dateUtils';
 
 const DOC_TYPES = ['เอกสาร', 'พัสดุ'];
 const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
@@ -551,7 +552,7 @@ export default function CreateParcel() {
                     doc.getElementById('tracking-id')!.textContent = trackingId;
                     doc.getElementById('sender-info')!.textContent = `${v.senderName} (${v.senderBranch})`;
                     doc.getElementById('receiver-info')!.textContent = `${v.receiverName} (${v.receiverBranch})`;
-                    doc.getElementById('created-at')!.textContent = `สร้างเมื่อ: ${new Date().toLocaleString('th-TH')}`;
+                    doc.getElementById('created-at')!.textContent = `สร้างเมื่อ: ${formatThaiDate(new Date().toISOString())}`;
                     doc.getElementById('qr-code')!.setAttribute(
                       'src',
                       `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(trackingId)}`,

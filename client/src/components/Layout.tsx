@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useParcelStore } from '@/hooks/useParcelStore';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Parcel } from '@/types/parcel';
-import { formatThaiDate } from '@/lib/dateUtils';
+import { formatThaiDate, getDateTime } from '@/lib/dateUtils';
 import { normalizeRole, ROLE_LABELS, type AppRole } from '@/lib/roles';
 
 type PageId = "dashboard" | "create" | "confirm" | "track" | "users";
@@ -57,8 +57,8 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
   // ✅ FIX: Use proper date comparison instead of string comparison
   const recentParcels = [...parcels]
     .sort((a, b) => {
-      const da = new Date((a['วันที่รับ'] || a['วันที่สร้าง']).replace(' ', 'T')).getTime();
-      const db = new Date((b['วันที่รับ'] || b['วันที่สร้าง']).replace(' ', 'T')).getTime();
+      const da = getDateTime(a['วันที่รับ'] || a['วันที่สร้าง']);
+      const db = getDateTime(b['วันที่รับ'] || b['วันที่สร้าง']);
       return db - da;
     })
     .slice(0, 8);
@@ -129,19 +129,17 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
           h-screen fixed left-0 top-0 z-50
           flex flex-col
           transition-all duration-300 ease-in-out
-          ${isSidebarOpen ? 'w-72 px-4 translate-x-0' : 'w-20 px-3 -translate-x-full lg:translate-x-0'}
+          ${isSidebarOpen ? 'w-72 px-4 translate-x-0' : 'w-[76px] px-3 -translate-x-full lg:translate-x-0'}
         `}
         style={{
-          background: 'linear-gradient(180deg, #10213c 0%, #091426 54%, #06101f 100%)',
+          background: 'linear-gradient(180deg, #10213c 0%, #091426 58%, #071120 100%)',
           borderRight: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '8px 0 32px rgba(5,12,24,0.28)',
+          boxShadow: '6px 0 22px rgba(5,12,24,0.22)',
         }}
       >
-        <div className="pointer-events-none absolute inset-x-3 top-3 h-36 rounded-[28px] bg-white/[0.035]" />
-        <div className="pointer-events-none absolute bottom-24 left-3 right-3 h-28 rounded-[28px] bg-secondary-container/[0.045]" />
         {/* Logo */}
-        <div className={`relative flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center'} px-1 pt-3 pb-5 mb-2`}>
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0 ring-1 ring-white/15"
+        <div className={`relative flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center'} px-0 pt-2 pb-5 mb-1`}>
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm shrink-0 ring-1 ring-white/15"
             style={{ background: 'linear-gradient(135deg, #fea619 0%, #ff8c00 100%)' }}>
             <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
               local_shipping
@@ -179,26 +177,25 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
                 aria-current={active ? "page" : undefined}
                 className={`
                   flex items-center
-                  ${isSidebarOpen ? 'gap-3 px-3 rounded-2xl' : 'justify-center rounded-2xl mx-auto w-12 h-12'}
+                  ${isSidebarOpen ? 'gap-3 px-3 rounded-xl' : 'justify-center rounded-xl mx-auto h-11 w-11'}
                   ${isSidebarOpen ? 'py-3' : 'py-0'} font-display text-sm font-semibold cursor-pointer
                   transition-all duration-200 relative group
                   ${active
                     ? 'text-white'
-                    : 'text-white/45 hover:text-white/80 hover:bg-white/5'
+                    : 'text-white/48 hover:text-white/80 hover:bg-white/5'
                   }
                 `}
                 style={active ? {
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 100%)',
-                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.14), 0 10px 24px rgba(0,0,0,0.18)',
+                  background: isSidebarOpen ? 'rgba(255,255,255,0.11)' : 'rgba(254,166,25,0.13)',
+                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)',
                 } : {}}
               >
                 {/* Active indicator bar — only when expanded */}
                 {active && (
-                  <span className={`absolute ${isSidebarOpen ? 'left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full' : '-left-3 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full'} bg-secondary-container shadow-[0_0_14px_rgba(254,166,25,0.55)]`} />
+                  <span className={`absolute ${isSidebarOpen ? 'left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full' : '-left-3 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full'} bg-secondary-container`} />
                 )}
-                <span className={`absolute inset-y-2 left-2 w-1 rounded-full bg-gradient-to-b ${item.accent} opacity-0 transition-opacity ${active && isSidebarOpen ? 'opacity-70' : ''}`} />
                 <span
-                  className={`material-symbols-outlined text-xl shrink-0 transition-all ${active ? 'text-secondary-container scale-105' : 'group-hover:scale-105'}`}
+                  className={`material-symbols-outlined shrink-0 text-[23px] transition-all ${active ? 'text-secondary-container' : 'text-white/48 group-hover:text-white/80'}`}
                   style={{ fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}
                 >
                   {item.icon}
@@ -213,8 +210,8 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
         <div className="relative mt-auto pt-4 border-t border-white/8 space-y-2 pb-3">
           {user ? (
             <>
-              <div className={`flex items-center ${isSidebarOpen ? 'gap-3 px-3' : 'justify-center'} py-2.5 bg-white/[0.07] rounded-2xl ring-1 ring-white/8`}>
-                <div className="w-9 h-9 rounded-2xl bg-white/10 ring-1 ring-white/10 flex items-center justify-center shrink-0 text-white font-black text-xs uppercase">
+              <div className={`flex items-center ${isSidebarOpen ? 'gap-3 px-3' : 'justify-center'} py-2.5 rounded-xl bg-white/[0.07] ring-1 ring-white/8`}>
+                <div className="w-9 h-9 rounded-xl bg-white/10 ring-1 ring-white/10 flex items-center justify-center shrink-0 text-white font-black text-xs uppercase">
                   {user.name.charAt(0)}
                 </div>
                 {isSidebarOpen && (
@@ -226,7 +223,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
               </div>
               <button
                 onClick={logout}
-                className={`w-full flex items-center ${isSidebarOpen ? 'gap-3 px-3' : 'justify-center'} py-2.5 text-red-300 hover:text-white hover:bg-red-500/15 font-display text-sm font-semibold cursor-pointer rounded-2xl transition-all`}
+                className={`w-full flex items-center ${isSidebarOpen ? 'gap-3 px-3' : 'justify-center'} py-2.5 text-red-300 hover:text-white hover:bg-red-500/15 font-display text-sm font-semibold cursor-pointer rounded-xl transition-all`}
                 title={isSidebarOpen ? undefined : "ออกจากระบบ"}
               >
                 <span className="material-symbols-outlined text-xl">logout</span>
@@ -255,7 +252,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
       )}
 
       {/* ── Main content ── */}
-      <div className={`flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'lg:ml-72' : 'lg:ml-20'}`}>
+      <div className={`flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'lg:ml-72' : 'lg:ml-[76px]'}`}>
         {/* Top bar */}
         <header
           className="sticky top-0 z-40 flex justify-between items-center px-4 lg:px-6 h-14"

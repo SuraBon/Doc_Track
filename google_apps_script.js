@@ -97,6 +97,48 @@ function getYearFromDate(date) {
   return Number(Utilities.formatDate(date, Session.getScriptTimeZone(), "yyyy"));
 }
 
+const THAI_MONTHS = [
+  "มกราคม",
+  "กุมภาพันธ์",
+  "มีนาคม",
+  "เมษายน",
+  "พฤษภาคม",
+  "มิถุนายน",
+  "กรกฎาคม",
+  "สิงหาคม",
+  "กันยายน",
+  "ตุลาคม",
+  "พฤศจิกายน",
+  "ธันวาคม"
+];
+
+function formatThaiDateForSheet(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (!date || isNaN(date.getTime())) return value ? String(value) : "";
+
+  const tz = Session.getScriptTimeZone();
+  const day = Number(Utilities.formatDate(date, tz, "d"));
+  const month = Number(Utilities.formatDate(date, tz, "M"));
+  const year = Number(Utilities.formatDate(date, tz, "yyyy")) + 543;
+
+  return day + " " + THAI_MONTHS[month - 1] + " " + year;
+}
+
+function formatSheetDateValue(value) {
+  if (!value) return "";
+  if (value instanceof Date || value.getTime) {
+    return formatThaiDateForSheet(value);
+  }
+
+  const text = String(value);
+  const parsed = new Date(text.replace(" ", "T"));
+  if (!isNaN(parsed.getTime())) {
+    return formatThaiDateForSheet(parsed);
+  }
+
+  return text;
+}
+
 function parseTrackingDate(trackingID) {
   const match = String(trackingID || "").match(/^TRK(\d{4})(\d{2})(\d{2})/);
   if (!match) return null;
@@ -337,6 +379,40 @@ function authorizeDrive() {
   getSpreadsheet();
 }
 
+function migrateExistingDatesToThai() {
+  getParcelSheetsForRead().forEach(function(entry) {
+    const sheet = entry.sheet;
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return;
+
+    const values = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
+    const nextValues = values.map(function(row) {
+      return [formatSheetDateValue(row[0])];
+    });
+    sheet.getRange(2, 2, nextValues.length, 1).setValues(nextValues);
+  });
+
+  getYearSpreadsheetsForRead().forEach(function(entry) {
+    const eventSheet = entry.spreadsheet.getSheetByName("ParcelEvents");
+    if (!eventSheet || eventSheet.getLastRow() <= 1) return;
+
+    const values = eventSheet.getRange(2, 3, eventSheet.getLastRow() - 1, 1).getValues();
+    const nextValues = values.map(function(row) {
+      return [formatSheetDateValue(row[0])];
+    });
+    eventSheet.getRange(2, 3, nextValues.length, 1).setValues(nextValues);
+  });
+
+  const usersSheet = getUsersSheet();
+  if (usersSheet && usersSheet.getLastRow() > 1) {
+    const values = usersSheet.getRange(2, 6, usersSheet.getLastRow() - 1, 1).getValues();
+    const nextValues = values.map(function(row) {
+      return [formatSheetDateValue(row[0])];
+    });
+    usersSheet.getRange(2, 6, nextValues.length, 1).setValues(nextValues);
+  }
+}
+
 function setup() {
   const ss = getSpreadsheet();
   getParcelSheet(new Date(), true);
@@ -362,7 +438,7 @@ function setup() {
     usersSheet.getRange("A1:F1").setFontWeight("bold");
     usersSheet.getRange("A1:F1").setBackground("#fef3c7");
     // Add default admin
-    usersSheet.appendRow(["admin", "System Admin", "HQ", "ADMIN", getInitialAdminPin(), new Date()]);
+    usersSheet.appendRow(["admin", "System Admin", "HQ", "ADMIN", getInitialAdminPin(), formatThaiDateForSheet(new Date())]);
   }
   ensureDemoUsers(usersSheet);
 }
@@ -406,7 +482,7 @@ function ensureDemoUsers(usersSheet) {
         usersSheet.getRange(rowIndex, 2, 1, 4).setValues([[user[1], user[2], user[3], user[4]]]);
       }
     } else {
-      usersSheet.appendRow([user[0], user[1], user[2], user[3], user[4], new Date()]);
+      usersSheet.appendRow([user[0], user[1], user[2], user[3], user[4], formatThaiDateForSheet(new Date())]);
     }
   });
 }
@@ -558,7 +634,7 @@ function doGet() {
     success: true,
     service: "doc-track-api",
     version: "1.1.0",
-    timestamp: new Date().toISOString(),
+    timestamp: formatThaiDateForSheet(new Date()),
   });
 }
 
@@ -585,7 +661,8 @@ function handleCreateParcel(payload) {
   const dateStr = Utilities.formatDate(date, Session.getScriptTimeZone(), "yyyyMMdd");
   const trackingId = "TRK" + dateStr + String(date.getTime()).slice(-4);
 
-  const createdDate = Utilities.formatDate(date, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+  const createdDate = formatThaiDateForSheet(date);
+  const createdEventDate = formatThaiDateForSheet(date);
 
   sheet.appendRow([
     trackingId,
@@ -610,7 +687,7 @@ function handleCreateParcel(payload) {
     eventSheet.appendRow([
       eventId,
       trackingId,
-      createdDate,
+      createdEventDate,
       "CREATED",
       normalizeBranchName(payload.senderBranch || ""),
       normalizeBranchName(payload.receiverBranch || ""),
@@ -641,7 +718,7 @@ function getParcelEventsMap() {
       const evt = {
         id: String(row[0]),
         trackingId: String(trackingId),
-        timestamp: String(row[2]),
+        timestamp: formatSheetDateValue(row[2]),
         eventType: String(row[3]),
         location: String(row[4]),
         destLocation: String(row[5]),
@@ -714,9 +791,7 @@ function handleGetParcels(payload) {
         parcel[headers[j]] = row[j];
       }
 
-      if (parcel["วันที่สร้าง"] && parcel["วันที่สร้าง"].getTime) {
-        parcel["วันที่สร้าง"] = Utilities.formatDate(parcel["วันที่สร้าง"], Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
-      }
+      parcel["วันที่สร้าง"] = formatSheetDateValue(parcel["วันที่สร้าง"]);
 
       parcels.push(parcel);
     }
@@ -755,9 +830,7 @@ function handleGetParcel(payload) {
         parcel[headers[j]] = row[j];
       }
 
-      if (parcel["วันที่สร้าง"] && parcel["วันที่สร้าง"].getTime) {
-        parcel["วันที่สร้าง"] = Utilities.formatDate(parcel["วันที่สร้าง"], Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
-      }
+      parcel["วันที่สร้าง"] = formatSheetDateValue(parcel["วันที่สร้าง"]);
 
       const eventsMap = getParcelEventsMap();
       parcel.events = eventsMap[payload.trackingID] || [];
@@ -928,7 +1001,7 @@ function handleConfirmReceipt(payload) {
           const eventSheet = getEventSheetForSpreadsheet(storage.spreadsheet);
         if (eventSheet) {
           const eventId = "EVT" + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMddHHmmssSSS") + Math.floor(Math.random() * 1000);
-          const eventTimeStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+          const eventTimeStr = formatThaiDateForSheet(new Date());
           eventSheet.appendRow([
             eventId,
             payload.trackingID,
@@ -983,9 +1056,7 @@ function handleSearchParcels(payload) {
         parcel[headers[j]] = row[j];
       }
 
-      if (parcel["วันที่สร้าง"] && parcel["วันที่สร้าง"].getTime) {
-        parcel["วันที่สร้าง"] = Utilities.formatDate(parcel["วันที่สร้าง"], Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
-      }
+      parcel["วันที่สร้าง"] = formatSheetDateValue(parcel["วันที่สร้าง"]);
 
       parcels.push(parcel);
       if (parcels.length >= 50) break;
@@ -1052,7 +1123,7 @@ function handleLogin(payload) {
 
   // Auto-create new user if not found (can set role to USER)
   // For security, you might want to restrict this in production.
-  sheet.appendRow([employeeId, "Unknown", "Unknown", "USER", "", new Date()]);
+  sheet.appendRow([employeeId, "Unknown", "Unknown", "USER", "", formatThaiDateForSheet(new Date())]);
   return createJsonResponse({ success: true, needsSetup: true, role: "USER", name: "Unknown", branch: "Unknown" });
 }
 
@@ -1107,7 +1178,7 @@ function handleGetUsers(payload) {
       branch: String(row[2]),
       role: normalizeRole(row[3] || "USER"),
       hasPin: !!String(row[4]).trim(),
-      createdAt: row[5] ? Utilities.formatDate(new Date(row[5]), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss") : ""
+      createdAt: formatSheetDateValue(row[5])
     });
   }
   return createJsonResponse({ success: true, users: users });
