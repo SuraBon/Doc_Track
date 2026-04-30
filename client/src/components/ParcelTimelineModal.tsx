@@ -5,14 +5,14 @@ import StatusBadge from '@/components/StatusBadge';
 import Timeline from '@/components/Timeline';
 import TrackingMap from '@/components/TrackingMap';
 import type { Parcel } from '@/types/parcel';
-import type { EventInfo } from '@/lib/timeline';
+import type { TimelineEvent } from '@/types/timeline';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ParcelTimelineModalProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   selectedParcel: Parcel | null;
-  selectedTimelineEvents: EventInfo[];
+  selectedTimelineEvents: TimelineEvent[];
   hasKnownBranches: boolean;
   onConfirmParcel: (trackingId: string) => void;
   onDeleteParcel: () => void;
