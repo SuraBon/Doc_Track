@@ -158,36 +158,46 @@ function doPost(e) {
       return createJsonResponse({ success: false, error: "Unauthorized" });
     }
 
-    if (action === 'createParcel') {
-      return handleCreateParcel(payload);
-    } else if (action === 'getParcels') {
-      return handleGetParcels(payload);
-    } else if (action === 'getParcel') {
-      return handleGetParcel(payload);
-    } else if (action === 'exportSummary') {
-      return handleExportSummary();
-    } else if (action === 'confirmReceipt') {
-      return handleConfirmReceipt(payload);
-    } else if (action === 'searchParcels') {
-      return handleSearchParcels(payload);
-    } else if (action === 'login') {
-      return handleLogin(payload);
-    } else if (action === 'setupPin') {
-      return handleSetupPin(payload);
-    } else if (action === 'getUsers') {
-      return handleGetUsers(payload);
-    } else if (action === 'updateUserRole') {
-      return handleUpdateUserRole(payload);
-    } else if (action === 'deleteParcel') {
-      return handleDeleteParcel(payload);
-    } else if (action === 'editParcel') {
-      return handleEditParcel(payload);
+    const writeActions = ['createParcel', 'confirmReceipt', 'login', 'setupPin', 'updateUserRole', 'deleteParcel', 'editParcel'];
+    const isWrite = writeActions.includes(action);
+
+    let result;
+    if (isWrite) {
+      const lock = LockService.getScriptLock();
+      try {
+        if (!lock.tryLock(30000)) {
+          return createJsonResponse({ success: false, error: "ระบบไม่ว่าง กรุณาลองใหม่อีกครั้ง (Lock timeout)" });
+        }
+        result = routeAction(action, payload);
+      } finally {
+        lock.releaseLock();
+      }
+    } else {
+      result = routeAction(action, payload);
     }
+
+    if (result) return result;
 
     return createJsonResponse({ success: false, error: "Invalid action" });
   } catch (error) {
     return createJsonResponse({ success: false, error: error.toString() });
   }
+}
+
+function routeAction(action, payload) {
+  if (action === 'createParcel') return handleCreateParcel(payload);
+  if (action === 'getParcels') return handleGetParcels(payload);
+  if (action === 'getParcel') return handleGetParcel(payload);
+  if (action === 'exportSummary') return handleExportSummary();
+  if (action === 'confirmReceipt') return handleConfirmReceipt(payload);
+  if (action === 'searchParcels') return handleSearchParcels(payload);
+  if (action === 'login') return handleLogin(payload);
+  if (action === 'setupPin') return handleSetupPin(payload);
+  if (action === 'getUsers') return handleGetUsers(payload);
+  if (action === 'updateUserRole') return handleUpdateUserRole(payload);
+  if (action === 'deleteParcel') return handleDeleteParcel(payload);
+  if (action === 'editParcel') return handleEditParcel(payload);
+  return null;
 }
 
 function doGet() {
@@ -295,37 +305,51 @@ function getParcelEventsMap() {
 
 function handleGetParcels(payload) {
   const sheet = getSpreadsheet().getSheetByName(SHEET_NAME);
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const allFiltered = [];
-
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-
-    if (payload.role === 'User') {
-      const creatorId = String(row[13] || "").trim();
-      if (creatorId !== String(payload.employeeId).trim()) {
-        continue;
-      }
-    }
-
-    if (payload.status === "ทั้งหมด" || !payload.status || row[9] === payload.status) {
-      allFiltered.push(row);
-    }
+  const lastRow = sheet.getLastRow();
+  
+  if (lastRow <= 1) {
+    return createJsonResponse({ success: true, parcels: [], totalCount: 0, hasMore: false });
   }
 
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const limit = parseInt(payload.limit) || 50;
   const offset = parseInt(payload.offset) || 0;
-  const totalCount = allFiltered.length;
-  const hasMore = (offset + limit) < totalCount;
 
   const parcels = [];
-  if (offset < totalCount) {
-    const startIndex = totalCount - 1 - offset;
-    const endIndex = Math.max(-1, startIndex - limit);
+  let currentEndRow = lastRow - offset;
+  let hasMore = false;
+  
+  // To avoid hitting execution limits, we will read at most 1000 rows at a time
+  // and accumulate until we hit our 'limit' of matched items.
+  const CHUNK_SIZE = 500;
 
-    for (let i = startIndex; i > endIndex; i--) {
-      const row = allFiltered[i];
+  while (currentEndRow > 1 && parcels.length < limit) {
+    const startRow = Math.max(2, currentEndRow - CHUNK_SIZE + 1);
+    const numRows = currentEndRow - startRow + 1;
+    
+    // Read this chunk
+    const chunkData = sheet.getRange(startRow, 1, numRows, headers.length).getValues();
+    
+    // Iterate backwards through the chunk
+    for (let i = chunkData.length - 1; i >= 0; i--) {
+      const row = chunkData[i];
+      
+      // RBAC check
+      if (payload.role === 'User') {
+        const creatorId = String(row[13] || "").trim();
+        if (creatorId !== String(payload.employeeId).trim()) {
+          continue; // Skip if not created by this user
+        }
+      }
+
+      // Status check
+      if (payload.status && payload.status !== "ทั้งหมด") {
+        if (row[9] !== payload.status) {
+          continue;
+        }
+      }
+
+      // Map to object
       const parcel = {};
       for (let j = 0; j < headers.length; j++) {
         parcel[headers[j]] = row[j];
@@ -336,6 +360,18 @@ function handleGetParcels(payload) {
       }
 
       parcels.push(parcel);
+      
+      if (parcels.length >= limit) {
+        hasMore = (startRow + i - 1) > 1;
+        break;
+      }
+    }
+    
+    currentEndRow = startRow - 1;
+    if (parcels.length < limit && currentEndRow > 1) {
+      hasMore = true;
+    } else if (currentEndRow <= 1) {
+      hasMore = false;
     }
   }
 
@@ -345,10 +381,11 @@ function handleGetParcels(payload) {
     p.events = eventsMap[p.TrackingID] || [];
   }
 
+  // totalCount is estimated as (lastRow - 1) for the client's knowledge
   return createJsonResponse({ 
     success: true, 
     parcels: parcels,
-    totalCount: totalCount,
+    totalCount: lastRow - 1,
     hasMore: hasMore
   });
 }
