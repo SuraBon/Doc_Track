@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { ArrowRight, PackageSearch, Search, ShieldCheck, UserRound, UserPlus } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { getParcel, searchParcels, getBranches } from '@/lib/parcelService';
+import { getParcel, searchParcels, getBranches, setupPin } from '@/lib/parcelService';
 import StatusBadge from '@/components/StatusBadge';
 import { formatThaiDate } from '@/lib/dateUtils';
 import type { Parcel } from '@/types/parcel';
+import SelectDropdown from '@/components/SelectDropdown';
 
 const DEMO_ACCOUNTS = [
   { role: 'User', username: 'user_test', password: 'user123', Icon: UserRound },
@@ -37,18 +38,7 @@ export default function Login() {
   const [regBranch, setRegBranch] = useState('');
   const [regName, setRegName] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isBranchOpen, setIsBranchOpen] = useState(false);
-  const branchRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (branchRef.current && !branchRef.current.contains(e.target as Node)) {
-        setIsBranchOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+  const [isBranchOpen, setIsBranchOpen] = useState(false); // kept for compatibility
 
   const branches = getBranches();
 
@@ -102,12 +92,12 @@ export default function Login() {
 
     setIsRegistering(true);
     try {
-      // ส่ง setupPin ตรงไปยัง backend — GAS จะ create user + set PIN ในขั้นตอนเดียว
-      const res = await setupUserPin(regId.trim(), regPassword, regName.trim(), regBranch);
+      // ใช้ setupPin โดยตรง (ไม่ผ่าน AuthContext) เพื่อไม่ให้ login อัตโนมัติ
+      const res = await setupPin(regId.trim(), regPassword, regName.trim(), regBranch);
       if (res.success) {
         toast.success(`สมัครสมาชิกสำเร็จ! ยินดีต้อนรับ ${regName.trim()}`, {
           description: 'กรุณาเข้าสู่ระบบด้วยรหัสที่สมัครไว้',
-          duration: 4000,
+          duration: 5000,
         });
         setIsRegisterOpen(false);
         setEmployeeId(regId.trim());
@@ -121,9 +111,11 @@ export default function Login() {
             duration: 5000,
           });
         } else {
-          toast.error(res.error || 'เกิดข้อผิดพลาดในการสมัคร');
+          toast.error(res.error || 'เกิดข้อผิดพลาดในการสมัคร กรุณาลองใหม่');
         }
       }
+    } catch (err) {
+      toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่');
     } finally {
       setIsRegistering(false);
     }
@@ -199,10 +191,10 @@ export default function Login() {
             <input
               type="text"
               value={employeeId}
-              onChange={e => setEmployeeId(e.target.value)}
+              onChange={e => setEmployeeId(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
               disabled={isSetup || loading}
               className="w-full h-12 bg-surface-container-lowest border border-outline-variant/60 rounded-xl px-4 text-primary font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all disabled:opacity-50"
-              placeholder="user_test"
+              placeholder="โปรดกรอกรหัสพนักงานของท่าน"
             />
           </div>
 
@@ -338,7 +330,7 @@ export default function Login() {
               <input
                 type="text"
                 value={regId}
-                onChange={e => setRegId(e.target.value)}
+                onChange={e => setRegId(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                 disabled={isRegistering}
                 className="w-full h-12 bg-surface-container-lowest border border-outline-variant/60 rounded-xl px-4 text-primary font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all disabled:opacity-50"
                 placeholder="เช่น EMP001"
@@ -372,45 +364,14 @@ export default function Login() {
 
             <div>
               <label className="block text-sm font-bold text-on-surface-variant mb-1.5">สาขาประจำ</label>
-              <div className="relative" ref={branchRef}>
-                <button
-                  type="button"
-                  disabled={isRegistering}
-                  onClick={() => setIsBranchOpen(v => !v)}
-                  className={`w-full h-12 bg-surface-container-lowest border rounded-xl px-4 text-left flex items-center justify-between transition-all disabled:opacity-50
-                    ${isBranchOpen ? 'border-primary ring-2 ring-primary/20' : 'border-outline-variant/60'}
-                    ${regBranch ? 'text-primary font-bold' : 'text-on-surface-variant/40'}`}
-                >
-                  <span>{regBranch || 'เลือกสาขา'}</span>
-                  <span className={`material-symbols-outlined text-lg text-on-surface-variant/50 transition-transform duration-200 ${isBranchOpen ? 'rotate-180' : ''}`}>
-                    expand_more
-                  </span>
-                </button>
-
-                {isBranchOpen && (
-                  <div className="absolute z-50 bottom-full mb-1 w-full bg-white rounded-2xl border border-outline-variant/30 shadow-xl overflow-hidden">
-                    <div className="max-h-52 overflow-y-auto py-1">
-                      {branches.map(b => (
-                        <button
-                          key={b}
-                          type="button"
-                          onClick={() => { setRegBranch(b); setIsBranchOpen(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors
-                            ${regBranch === b
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-on-surface hover:bg-surface-container-lowest'
-                            }`}
-                        >
-                          {regBranch === b && (
-                            <span className="material-symbols-outlined text-base text-primary mr-2 align-middle" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
-                          )}
-                          {b}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <SelectDropdown
+                value={regBranch}
+                onChange={setRegBranch}
+                options={branches.map(b => ({ value: b, label: b }))}
+                placeholder="เลือกสาขา"
+                icon="apartment"
+                disabled={isRegistering}
+              />
             </div>
 
             <button

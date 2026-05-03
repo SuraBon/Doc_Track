@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import PinInput from '@/components/PinInput';
 import { formatThaiDate } from '@/lib/dateUtils';
+import SelectDropdown from '@/components/SelectDropdown';
 
 const DOC_TYPES = ['เอกสาร', 'พัสดุ'];
 const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
@@ -160,20 +161,13 @@ export default function CreateParcel() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-1">สาขาผู้ส่ง *</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg">apartment</span>
-                  <select
-                    name="senderBranch"
-                    value={formData.senderBranch}
-                    onChange={handleInputChange}
-                    className="w-full bg-white border border-outline-variant rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-display appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>เลือกสาขา</option>
-                    {branches.map(b => <option key={b} value={b}>{b}</option>)}
-                    <option value={OTHER_BRANCH_VALUE}>อื่นๆ (ระบุเอง)</option>
-                  </select>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg pointer-events-none">expand_more</span>
-                </div>
+                <SelectDropdown
+                  value={formData.senderBranch}
+                  onChange={v => setFormData(p => ({ ...p, senderBranch: v }))}
+                  options={[...branches.map(b => ({ value: b, label: b })), { value: OTHER_BRANCH_VALUE, label: 'อื่นๆ (ระบุเอง)' }]}
+                  placeholder="เลือกสาขา"
+                  icon="apartment"
+                />
                 {formData.senderBranch === OTHER_BRANCH_VALUE && (
                   <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
                     <input
@@ -220,20 +214,13 @@ export default function CreateParcel() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-1">สาขาผู้รับ *</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg">home_pin</span>
-                  <select
-                    name="receiverBranch"
-                    value={formData.receiverBranch}
-                    onChange={handleInputChange}
-                    className="w-full bg-white border border-outline-variant rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-display appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>เลือกสาขา</option>
-                    {branches.map(b => <option key={b} value={b}>{b}</option>)}
-                    <option value={OTHER_BRANCH_VALUE}>อื่นๆ (ระบุเอง)</option>
-                  </select>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg pointer-events-none">expand_more</span>
-                </div>
+                <SelectDropdown
+                  value={formData.receiverBranch}
+                  onChange={v => setFormData(p => ({ ...p, receiverBranch: v }))}
+                  options={[...branches.map(b => ({ value: b, label: b })), { value: OTHER_BRANCH_VALUE, label: 'อื่นๆ (ระบุเอง)' }]}
+                  placeholder="เลือกสาขา"
+                  icon="home_pin"
+                />
                 {formData.receiverBranch === OTHER_BRANCH_VALUE && (
                   <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
                     <input
@@ -269,20 +256,13 @@ export default function CreateParcel() {
             <div className="space-y-5">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-1">ประเภท *</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg">category</span>
-                  <select
-                    name="docType"
-                    value={formData.docType}
-                    onChange={handleInputChange}
-                    className="w-full bg-white border border-outline-variant rounded-lg pl-10 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-display appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled>เลือกประเภท</option>
-                    {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    <option value={OTHER_BRANCH_VALUE}>อื่นๆ (ระบุเอง)</option>
-                  </select>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg pointer-events-none">expand_more</span>
-                </div>
+                <SelectDropdown
+                  value={formData.docType}
+                  onChange={v => setFormData(p => ({ ...p, docType: v }))}
+                  options={[...DOC_TYPES.map(t => ({ value: t, label: t })), { value: OTHER_BRANCH_VALUE, label: 'อื่นๆ (ระบุเอง)' }]}
+                  placeholder="เลือกประเภท"
+                  icon="category"
+                />
                 {formData.docType === OTHER_BRANCH_VALUE && (
                   <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
                     <input

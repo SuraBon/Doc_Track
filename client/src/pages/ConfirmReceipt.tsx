@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useParcelStore } from '@/hooks/useParcelStore';
 import PinInput from '@/components/PinInput';
 import { getBranches, getParcel } from '@/lib/parcelService';
+import SelectDropdown from '@/components/SelectDropdown';
 import { toast } from 'sonner';
 import type { Parcel } from '@/types/parcel';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -586,18 +587,13 @@ export default function ConfirmReceipt({
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <div className="relative">
-                            <select
-                              value={forwardFromBranch}
-                              onChange={(e) => setForwardFromBranch(e.target.value)}
-                              className="w-full bg-white border border-outline-variant rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-secondary outline-none font-display appearance-none"
-                            >
-                              <option value="" disabled>จากสาขา</option>
-                              {branches.map(b => <option key={b} value={b}>{b}</option>)}
-                              <option value={OTHER_BRANCH_VALUE}>อื่นๆ</option>
-                            </select>
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg">flight_takeoff</span>
-                          </div>
+                          <SelectDropdown
+                            value={forwardFromBranch}
+                            onChange={setForwardFromBranch}
+                            options={[...branches.map(b => ({ value: b, label: b })), { value: OTHER_BRANCH_VALUE, label: 'อื่นๆ' }]}
+                            placeholder="จากสาขา"
+                            icon="flight_takeoff"
+                          />
                           {forwardFromBranch === OTHER_BRANCH_VALUE && (
                             <input
                               placeholder="ระบุชื่อสาขาต้นทาง"
@@ -609,18 +605,13 @@ export default function ConfirmReceipt({
                           )}
                         </div>
                         <div className="space-y-2">
-                          <div className="relative">
-                            <select
-                              value={forwardToBranch}
-                              onChange={(e) => setForwardToBranch(e.target.value)}
-                              className="w-full bg-white border border-outline-variant rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-1 focus:ring-secondary outline-none font-display appearance-none"
-                            >
-                              <option value="" disabled>ไปสาขา</option>
-                              {branches.map(b => <option key={b} value={b}>{b}</option>)}
-                              <option value={OTHER_BRANCH_VALUE}>อื่นๆ</option>
-                            </select>
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg">flight_land</span>
-                          </div>
+                          <SelectDropdown
+                            value={forwardToBranch}
+                            onChange={setForwardToBranch}
+                            options={[...branches.map(b => ({ value: b, label: b })), { value: OTHER_BRANCH_VALUE, label: 'อื่นๆ' }]}
+                            placeholder="ไปสาขา"
+                            icon="flight_land"
+                          />
                           {forwardToBranch === OTHER_BRANCH_VALUE && (
                             <input
                               placeholder="ระบุชื่อสาขาปลายทาง"
