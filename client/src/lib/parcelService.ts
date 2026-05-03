@@ -292,17 +292,6 @@ function normalizeAuthResponse<T extends { user?: User; role?: string }>(res: T)
 
 function getDemoLogin(employeeId: string, pin?: string): { success: boolean, user?: User, error?: string } {
   const normalizedId = employeeId.trim();
-
-  // Check local registered users first
-  const localUsers = getLocalUsers();
-  if (localUsers[normalizedId]) {
-    const lu = localUsers[normalizedId];
-    if (lu.password !== String(pin || '').trim()) {
-      return { success: false, error: 'รหัสผ่านไม่ถูกต้อง' };
-    }
-    return { success: true, user: { employeeId: normalizedId, name: lu.name, branch: lu.branch, role: 'USER' } };
-  }
-
   const demoUser = DEMO_USERS[normalizedId];
   if (!demoUser) {
     return { success: false, error: BACKEND_LOGIN_UNAVAILABLE_ERROR };
@@ -310,19 +299,13 @@ function getDemoLogin(employeeId: string, pin?: string): { success: boolean, use
   if (DEMO_PASSWORDS[normalizedId] !== String(pin || '').trim()) {
     return { success: false, error: 'รหัสผ่านไม่ถูกต้อง' };
   }
-
-  return {
-    success: true,
-    user: {
-      ...demoUser,
-    },
-  };
+  return { success: true, user: { ...demoUser } };
 }
 
 // Errors from the backend that mean "this user/password is genuinely wrong"
-// — do NOT fall back to demo for these.
 const REAL_AUTH_ERRORS = [
   'รหัสผ่านไม่ถูกต้อง',
+  'PIN ไม่ถูกต้อง',
   'ไม่พบผู้ใช้งาน',
   'Invalid credentials',
   'Wrong password',
@@ -333,30 +316,19 @@ export async function login(employeeId: string, pin?: string): Promise<{ success
   try {
     const res = normalizeAuthResponse(await callAPI<{ success: boolean, needsSetup?: boolean, user?: User, error?: string, role?: string, name?: string, branch?: string }>({ action: 'login', employeeId, pin }));
 
-    // Backend responded — use as-is (covers success, needsSetup, and real auth errors)
+    // Backend responded — use as-is
     if (res.success || res.needsSetup) return res;
 
-    // Backend returned a real auth error — respect it
+    // Real auth error from backend — respect it
     if (res.error && REAL_AUTH_ERRORS.some(e => res.error!.includes(e))) {
       return res;
     }
 
-    // Backend returned infra error (not deployed, invalid action, etc.) — fall back to demo
+    // Backend infra error — fall back to demo accounts only
     return getDemoLogin(employeeId, pin);
   } catch {
-    // Backend unreachable — fall back to demo accounts
+    // Backend unreachable — fall back to demo accounts only
     return getDemoLogin(employeeId, pin);
-  }
-}
-
-// Local registered users (used when backend is unavailable)
-const LOCAL_USERS_KEY = 'doc_track_local_users';
-
-function getLocalUsers(): Record<string, { name: string; branch: string; password: string }> {
-  try {
-    return JSON.parse(localStorage.getItem(LOCAL_USERS_KEY) ?? '{}');
-  } catch {
-    return {};
   }
 }
 
@@ -364,36 +336,21 @@ export async function setupPin(employeeId: string, pin: string, name: string, br
   try {
     const res = normalizeAuthResponse(await callAPI<{ success: boolean, user?: User, error?: string }>({ action: 'setupPin', employeeId, pin, name, branch }));
 
-    // Success from backend
     if (res.success) return res;
 
-    // Duplicate PIN — user already registered
+    // Duplicate
     if (res.error) {
       const isDuplicate = res.error.toLowerCase().includes('already') ||
         res.error.includes('ซ้ำ') || res.error.includes('มีอยู่แล้ว') || res.error.includes('duplicate');
       if (isDuplicate) {
         return { success: false, error: 'รหัสพนักงานนี้มีผู้ใช้งานแล้ว กรุณาใช้รหัสอื่น' };
       }
+      return { success: false, error: res.error };
     }
 
-    // Backend infra error or user not found (login step didn't reach backend) — use local storage
-    const localUsers = getLocalUsers();
-    if (localUsers[employeeId] || DEMO_USERS[employeeId]) {
-      return { success: false, error: 'รหัสพนักงานนี้มีผู้ใช้งานแล้ว กรุณาใช้รหัสอื่น' };
-    }
-    localUsers[employeeId] = { name, branch, password: pin };
-    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(localUsers));
-    return { success: true, user: { employeeId, name, branch, role: 'USER' } };
-
-  } catch {
-    // Network error — fall back to local storage
-    const localUsers = getLocalUsers();
-    if (localUsers[employeeId] || DEMO_USERS[employeeId]) {
-      return { success: false, error: 'รหัสพนักงานนี้มีผู้ใช้งานแล้ว กรุณาใช้รหัสอื่น' };
-    }
-    localUsers[employeeId] = { name, branch, password: pin };
-    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(localUsers));
-    return { success: true, user: { employeeId, name, branch, role: 'USER' } };
+    return { success: false, error: 'เกิดข้อผิดพลาด กรุณาลองใหม่' };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' };
   }
 }
 
