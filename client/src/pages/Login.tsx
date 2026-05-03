@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { ArrowRight, PackageSearch, Search, ShieldCheck, UserRound, UserPlus } from 'lucide-react';
@@ -37,6 +37,18 @@ export default function Login() {
   const [regBranch, setRegBranch] = useState('');
   const [regName, setRegName] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isBranchOpen, setIsBranchOpen] = useState(false);
+  const branchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (branchRef.current && !branchRef.current.contains(e.target as Node)) {
+        setIsBranchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   const branches = getBranches();
 
@@ -90,15 +102,27 @@ export default function Login() {
 
     setIsRegistering(true);
     try {
+      // ส่ง setupPin ตรงไปยัง backend — GAS จะ create user + set PIN ในขั้นตอนเดียว
       const res = await setupUserPin(regId.trim(), regPassword, regName.trim(), regBranch);
       if (res.success) {
-        toast.success('สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ');
+        toast.success(`สมัครสมาชิกสำเร็จ! ยินดีต้อนรับ ${regName.trim()}`, {
+          description: 'กรุณาเข้าสู่ระบบด้วยรหัสที่สมัครไว้',
+          duration: 4000,
+        });
         setIsRegisterOpen(false);
         setEmployeeId(regId.trim());
         setPin('');
         setRegId(''); setRegPassword(''); setRegName(''); setRegBranch('');
       } else {
-        toast.error(res.error || 'เกิดข้อผิดพลาดในการสมัคร');
+        const isDuplicate = res.error?.includes('already') || res.error?.includes('มีผู้ใช้งานแล้ว') || res.error?.includes('PIN already');
+        if (isDuplicate) {
+          toast.error('รหัสพนักงานนี้มีผู้ใช้งานแล้ว', {
+            description: 'กรุณาใช้รหัสพนักงานอื่น หรือเข้าสู่ระบบด้วยรหัสเดิม',
+            duration: 5000,
+          });
+        } else {
+          toast.error(res.error || 'เกิดข้อผิดพลาดในการสมัคร');
+        }
       }
     } finally {
       setIsRegistering(false);
@@ -269,10 +293,11 @@ export default function Login() {
             <div className="mt-4 text-center">
               <button
                 type="button"
-                onClick={() => setIsTrackOpen(true)}
-                className="text-on-surface-variant/60 font-bold text-sm hover:text-primary hover:underline transition-colors"
+                onClick={() => setIsRegisterOpen(true)}
+                className="inline-flex items-center gap-1.5 text-primary font-bold text-sm hover:underline transition-colors"
               >
-                ติดตามพัสดุโดยไม่ต้องเข้าระบบ
+                <UserPlus className="h-4 w-4" />
+                สมัครสมาชิกใหม่
               </button>
             </div>
           )}
@@ -280,11 +305,10 @@ export default function Login() {
             <div className="mt-2 text-center">
               <button
                 type="button"
-                onClick={() => setIsRegisterOpen(true)}
-                className="inline-flex items-center gap-1.5 text-primary font-bold text-sm hover:underline transition-colors"
+                onClick={() => setIsTrackOpen(true)}
+                className="text-on-surface-variant/60 font-bold text-sm hover:text-primary hover:underline transition-colors"
               >
-                <UserPlus className="h-4 w-4" />
-                สมัครสมาชิกใหม่
+                ติดตามพัสดุโดยไม่ต้องเข้าระบบ
               </button>
             </div>
           )}
@@ -348,17 +372,45 @@ export default function Login() {
 
             <div>
               <label className="block text-sm font-bold text-on-surface-variant mb-1.5">สาขาประจำ</label>
-              <select
-                value={regBranch}
-                onChange={e => setRegBranch(e.target.value)}
-                disabled={isRegistering}
-                className="w-full h-12 bg-surface-container-lowest border border-outline-variant/60 rounded-xl px-4 text-primary font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all disabled:opacity-50 appearance-none cursor-pointer"
-              >
-                <option value="">-- เลือกสาขา --</option>
-                {branches.map(b => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
+              <div className="relative" ref={branchRef}>
+                <button
+                  type="button"
+                  disabled={isRegistering}
+                  onClick={() => setIsBranchOpen(v => !v)}
+                  className={`w-full h-12 bg-surface-container-lowest border rounded-xl px-4 text-left flex items-center justify-between transition-all disabled:opacity-50
+                    ${isBranchOpen ? 'border-primary ring-2 ring-primary/20' : 'border-outline-variant/60'}
+                    ${regBranch ? 'text-primary font-bold' : 'text-on-surface-variant/40'}`}
+                >
+                  <span>{regBranch || 'เลือกสาขา'}</span>
+                  <span className={`material-symbols-outlined text-lg text-on-surface-variant/50 transition-transform duration-200 ${isBranchOpen ? 'rotate-180' : ''}`}>
+                    expand_more
+                  </span>
+                </button>
+
+                {isBranchOpen && (
+                  <div className="absolute z-50 bottom-full mb-1 w-full bg-white rounded-2xl border border-outline-variant/30 shadow-xl overflow-hidden">
+                    <div className="max-h-52 overflow-y-auto py-1">
+                      {branches.map(b => (
+                        <button
+                          key={b}
+                          type="button"
+                          onClick={() => { setRegBranch(b); setIsBranchOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors
+                            ${regBranch === b
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-on-surface hover:bg-surface-container-lowest'
+                            }`}
+                        >
+                          {regBranch === b && (
+                            <span className="material-symbols-outlined text-base text-primary mr-2 align-middle" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                          )}
+                          {b}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <button

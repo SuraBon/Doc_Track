@@ -1157,7 +1157,11 @@ function handleSetupPin(payload) {
       return createJsonResponse({ success: true, user: { employeeId, name: finalName, branch: finalBranch, role, token } });
     }
   }
-  return createJsonResponse({ success: false, error: "User not found" });
+
+  // User not found — auto-create new user and set PIN in one step
+  sheet.appendRow([employeeId, name || "Unknown", branch || "Unknown", "USER", pin, formatThaiDateForSheet(new Date())]);
+  const token = generateToken(employeeId, "USER", getApiKey());
+  return createJsonResponse({ success: true, user: { employeeId, name: name || "Unknown", branch: branch || "Unknown", role: "USER", token } });
 }
 
 function handleGetUsers(payload) {
