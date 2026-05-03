@@ -138,28 +138,20 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
         }}
       >
         {/* Logo */}
-        <div className={`relative flex items-center ${isSidebarOpen ? 'gap-3' : 'justify-center'} px-0 pt-2 pb-5 mb-1`}>
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm shrink-0 ring-1 ring-white/15"
-            style={{ background: 'linear-gradient(135deg, #fea619 0%, #ff8c00 100%)' }}>
-            <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-              description
-            </span>
-          </div>
-          {isSidebarOpen && (
+        {isSidebarOpen && (
+          <div className="relative flex items-center gap-3 px-0 pt-2 pb-5 mb-1">
             <div className="flex flex-col min-w-0">
               <span className="text-white font-black text-lg font-display leading-none">DocTrack</span>
               <span className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mt-0.5">ระบบจัดการพัสดุ</span>
             </div>
-          )}
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="hidden lg:flex ml-auto p-1.5 text-white/30 hover:text-white hover:bg-white/10 rounded-lg transition-all shrink-0"
-          >
-            <span className="material-symbols-outlined text-lg">
-              {isSidebarOpen ? 'chevron_left' : 'chevron_right'}
-            </span>
-          </button>
-        </div>
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="hidden lg:flex ml-auto p-1.5 text-white/30 hover:text-white hover:bg-white/10 rounded-lg transition-all shrink-0"
+            >
+              <span className="material-symbols-outlined text-lg">chevron_left</span>
+            </button>
+          </div>
+        )}
 
         {/* Divider */}
         <div className="relative h-px bg-white/8 mx-2 mb-4" />
@@ -204,6 +196,16 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
               </a>
             );
           })}
+          {/* Expand button — shown centered when sidebar is collapsed */}
+          {!isSidebarOpen && (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="hidden lg:flex justify-center items-center mx-auto h-11 w-11 rounded-xl text-white/30 hover:text-white hover:bg-white/10 transition-all"
+              title="ขยาย sidebar"
+            >
+              <span className="material-symbols-outlined text-lg">chevron_right</span>
+            </button>
+          )}
         </nav>
 
         {/* Footer */}

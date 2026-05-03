@@ -308,15 +308,34 @@ function getDemoLogin(employeeId: string, pin?: string): { success: boolean, use
   };
 }
 
+// Errors from the backend that mean "this user/password is genuinely wrong"
+// — do NOT fall back to demo for these.
+const REAL_AUTH_ERRORS = [
+  'รหัสผ่านไม่ถูกต้อง',
+  'ไม่พบผู้ใช้งาน',
+  'Invalid credentials',
+  'Wrong password',
+  'User not found',
+];
+
 export async function login(employeeId: string, pin?: string): Promise<{ success: boolean, needsSetup?: boolean, user?: User, error?: string, role?: string, name?: string, branch?: string }> {
   try {
     const res = normalizeAuthResponse(await callAPI<{ success: boolean, needsSetup?: boolean, user?: User, error?: string, role?: string, name?: string, branch?: string }>({ action: 'login', employeeId, pin }));
-    if (!res.success && res.error === 'Invalid action') {
-      return getDemoLogin(employeeId, pin);
+
+    // Backend responded successfully — use it as-is
+    if (res.success) return res;
+
+    // Backend explicitly rejected credentials — respect that
+    if (res.error && REAL_AUTH_ERRORS.some(e => res.error!.includes(e))) {
+      return res;
     }
-    return res;
-  } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'เกิดข้อผิดพลาด' };
+
+    // Backend returned any other error (not deployed, invalid action, etc.)
+    // — fall back to demo accounts
+    return getDemoLogin(employeeId, pin);
+  } catch {
+    // Backend unreachable (network error, CORS, etc.) — fall back to demo accounts
+    return getDemoLogin(employeeId, pin);
   }
 }
 
