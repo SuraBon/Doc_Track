@@ -80,7 +80,8 @@ function TrackingMap({ events }: TrackingMapProps) {
       }
 
       // Draw the destination branch as the next point when it is known.
-      if (e.destLocation && BRANCH_COORDS[e.destLocation]) {
+      // ไม่แสดงปลายทางสำหรับ CREATED event — รอจนกว่าจะมีการเคลื่อนไหวจริง
+      if (e.title !== 'รับพัสดุเข้าระบบ' && e.destLocation && BRANCH_COORDS[e.destLocation]) {
         entries.push({
           ...BRANCH_COORDS[e.destLocation],
           label: e.destLocation,
