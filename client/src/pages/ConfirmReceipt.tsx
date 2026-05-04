@@ -488,18 +488,19 @@ export default function ConfirmReceipt({
                 onClick={() => fileInputRef.current?.click()}
                 className="border-2 border-dashed border-outline-variant rounded-3xl p-8 sm:p-12 text-center cursor-pointer hover:border-primary hover:bg-surface-container-lowest transition-all group relative overflow-hidden"
               >
-                {/* hidden file input — no capture so desktop gets file picker, mobile gets both options */}
+                {/* hidden file input — capture="environment" เปิดกล้องหลังโดยตรงบน mobile */}
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
                 <div className="w-20 h-20 bg-surface-container rounded-3xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:bg-primary/5 transition-all">
-                  <span className="material-symbols-outlined text-4xl text-on-surface-variant group-hover:text-primary transition-colors">add_a_photo</span>
+                  <span className="material-symbols-outlined text-4xl text-on-surface-variant group-hover:text-primary transition-colors">photo_camera</span>
                 </div>
-                <p className="text-lg font-bold text-primary font-display">คลิกเพื่อเปิดกล้อง / เลือกรูป</p>
+                <p className="text-lg font-bold text-primary font-display">แตะเพื่อถ่ายรูป</p>
                 <p className="text-on-surface-variant mt-2 text-sm">ระบบจะบีบอัดรูปภาพให้อัตโนมัติเพื่อประหยัดพื้นที่</p>
               </div>
             ) : (
