@@ -9,7 +9,6 @@ import { useParcelStore } from '@/hooks/useParcelStore';
 import { getBranches } from '@/lib/parcelService';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import PinInput from '@/components/PinInput';
 import { formatThaiDate } from '@/lib/dateUtils';
 import NativeSelect, { OTHER_VALUE, resolveSelectValue } from '@/components/NativeSelect';
 import QRCode from 'qrcode';
@@ -33,7 +32,7 @@ export default function CreateParcel() {
   const [customSenderBranch, setCustomSenderBranch] = useState('');
   const [customReceiverBranch, setCustomReceiverBranch] = useState('');
   const [customDocType, setCustomDocType] = useState('');
-  const [pin, setPin] = useState('');  const [createdTrackingId, setCreatedTrackingId] = useState<string | null>(null);
+  const [createdTrackingId, setCreatedTrackingId] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [isResultOpen, setIsResultOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -99,19 +98,17 @@ export default function CreateParcel() {
       const trackingId = await createParcel(
         v.senderName, v.senderBranch,
         v.receiverName, v.receiverBranch,
-        v.docType, v.description, v.note, pin
+        v.docType, v.description, v.note
       );
       if (trackingId) {
         setCreatedTrackingId(trackingId);
         setIsResultOpen(true);
         setFormData({ senderName: '', senderBranch: '', receiverName: '', receiverBranch: '', docType: '', description: '', note: '' });
-        setPin('');
       } else {
         toast.error('ไม่สามารถสร้างรายการได้');
       }
     } finally {
       setIsLoading(false);
-      setPin('');
     }
   };
 
@@ -389,9 +386,7 @@ export default function CreateParcel() {
               </div>
             </div>
 
-            <PinInput pin={pin} setPin={setPin} className="mt-6 mx-4 md:mx-6 mb-6" />
-          </div>
-
+            </div>
           {/* Footer (Fixed) */}
           <div className="p-4 md:p-6 bg-surface-container-lowest border-t border-outline-variant/20 shrink-0">
             <div className="flex gap-4">
@@ -403,7 +398,7 @@ export default function CreateParcel() {
               </button>
               <button
                 onClick={handleConfirmSubmit}
-                disabled={isLoading || pin.length < 4}
+                disabled={isLoading}
                 className="flex-[2] flex items-center justify-center gap-2 h-14 bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all text-base disabled:opacity-50"
               >
                 {isLoading ? (

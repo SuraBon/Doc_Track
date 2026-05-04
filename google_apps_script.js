@@ -626,10 +626,6 @@ function handleCreateParcel(payload) {
   if (String(payload.receiverBranch).length > 100) return createJsonResponse({ success: false, error: "ชื่อสาขาผู้รับยาวเกินไป" });
   if (String(payload.docType).length > 100) return createJsonResponse({ success: false, error: "ประเภทพัสดุยาวเกินไป" });
 
-  if (!verifyPin(payload.senderBranch, payload.pin)) {
-    return createJsonResponse({ success: false, error: "รหัส PIN ของสาขาไม่ถูกต้อง" });
-  }
-
   if (payload.note && String(payload.note).length > MAX_NOTE_LENGTH) {
     return createJsonResponse({ success: false, error: "Note is too long" });
   }
@@ -878,9 +874,6 @@ function handleConfirmReceipt(payload) {
   }
 
   // Location must be provided by the frontend payload during forwarding or delivery
-  if (payload.location && !verifyPin(payload.location, payload.pin)) {
-    return createJsonResponse({ success: false, error: "รหัส PIN ของสาขาไม่ถูกต้อง" });
-  }
   if (payload.note && String(payload.note).length > MAX_NOTE_LENGTH) {
     return createJsonResponse({ success: false, error: "Note is too long" });
   }

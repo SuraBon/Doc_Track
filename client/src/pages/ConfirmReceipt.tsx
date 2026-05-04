@@ -9,7 +9,6 @@ import { createPortal } from 'react-dom';
 import L from 'leaflet';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useParcelStore } from '@/hooks/useParcelStore';
-import PinInput from '@/components/PinInput';
 import { getBranches, getParcel } from '@/lib/parcelService';
 import NativeSelect, { OTHER_VALUE, resolveSelectValue } from '@/components/NativeSelect';
 import { toast } from 'sonner';
@@ -63,7 +62,6 @@ export default function ConfirmReceipt({
   const [photoUrl, setPhotoUrl] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [note, setNote] = useState('');
-  const [pin, setPin] = useState('');
 
   const { position, status: geoStatus, errorMessage: geoError, requestLocation, reset: resetGeo } = useGeolocation();
 
@@ -310,8 +308,7 @@ export default function ConfirmReceipt({
         finalEventType,
         eventLocation,
         eventDestLocation,
-        eventPerson,
-        pin
+        eventPerson
       );
       
       if (response && response.success) {
@@ -865,8 +862,6 @@ export default function ConfirmReceipt({
                 <p className="text-sm text-on-surface italic">{note}</p>
               </div>
             )}
-
-            <PinInput pin={pin} setPin={setPin} className="mt-2" />
           </div>
 
           {/* Footer */}
@@ -879,7 +874,7 @@ export default function ConfirmReceipt({
             </button>
             <button
               onClick={executeConfirm}
-              disabled={isLoading || pin.length < 4}
+              disabled={isLoading}
               className="flex-[2] flex items-center justify-center gap-2 h-12 bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
             >
               {isLoading ? (
