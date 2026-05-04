@@ -4,25 +4,7 @@ import { MapView } from './Map';
 import type { TimelineEvent } from '@/types/timeline';
 import { formatThaiDateTime } from '@/lib/dateUtils';
 
-const BRANCH_COORDS: Record<string, { lat: number; lng: number }> = {
-  'MS':                   { lat: 13.6863417, lng: 100.5473102 },
-  'พระประแดง':            { lat: 13.6316148, lng: 100.5298312 },
-  'บางนา':                { lat: 13.6750005, lng: 100.5957341 },
-  'มีนบุรี':              { lat: 13.8158352, lng: 100.7511927 },
-  'เลียบด่วน':            { lat: 13.7831602, lng: 100.6073732 },
-  'เดอะมอลล์บางกะปิ':    { lat: 13.7657541, lng: 100.6421960 },
-  'วิภาวดี':              { lat: 13.8079029, lng: 100.5605981 },
-  'พิบูลสงคราม':          { lat: 13.8278215, lng: 100.5026199 },
-  'พันธุ์สงคราม':         { lat: 13.8278215, lng: 100.5026199 }, // alias
-  'เดอะมอลล์บางแค':      { lat: 13.7129595, lng: 100.4079480 },
-  'มหาชัย':               { lat: 13.5485480, lng: 100.2621752 },
-  'ศาลายา':               { lat: 13.7851938, lng: 100.2716878 },
-  'กาญจนา':               { lat: 13.6922140, lng: 100.4081029 },
-  'เซ็นทรัล พระราม 2':   { lat: 13.6634845, lng: 100.4375234 },
-  'เซ็นทรัลพระราม 2':    { lat: 13.6634845, lng: 100.4375234 }, // alias
-};
-
-const DEFAULT_CENTER = BRANCH_COORDS['บางนา'];
+const DEFAULT_CENTER = { lat: 13.7563, lng: 100.5018 }; // กรุงเทพฯ
 
 /** Escape a string so it is safe to embed in HTML attribute/text context. */
 function escapeHtml(str: string): string {
@@ -32,24 +14,6 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-/** Resolve coordinates for a timeline event — prefer real GPS over branch lookup. */
-function resolveCoords(event: TimelineEvent): { lat: number; lng: number } | null {
-  // Prefer real GPS coordinates
-  if (
-    typeof event.latitude === 'number' &&
-    typeof event.longitude === 'number' &&
-    isFinite(event.latitude) &&
-    isFinite(event.longitude)
-  ) {
-    return { lat: event.latitude, lng: event.longitude };
-  }
-  // Fallback to branch lookup
-  if (event.location && BRANCH_COORDS[event.location]) {
-    return BRANCH_COORDS[event.location];
-  }
-  return null;
 }
 
 interface TrackingMapProps {
@@ -63,44 +27,26 @@ function TrackingMap({ events }: TrackingMapProps) {
   const [isMapReady, setIsMapReady] = useState(false);
 
   // Derive the ordered list of coordinate-bearing events from the timeline.
+  // ใช้เฉพาะ GPS จริงจาก events — ไม่ fallback ไปหา branch coordinates
   const { pathEntries, hasUnresolved } = useMemo(() => {
     const entries: { lat: number; lng: number; label: string; isGps: boolean; isLast: boolean; event: TimelineEvent }[] = [];
 
     for (const e of events) {
-      const coords = resolveCoords(e);
-      if (coords) {
-        const isGps = typeof e.latitude === 'number' && typeof e.longitude === 'number';
+      // ใช้เฉพาะ GPS จริงเท่านั้น
+      if (
+        typeof e.latitude === 'number' &&
+        typeof e.longitude === 'number' &&
+        isFinite(e.latitude) &&
+        isFinite(e.longitude)
+      ) {
         entries.push({
-          ...coords,
-          label: e.location || (isGps ? 'GPS' : ''),
-          isGps,
+          lat: e.latitude,
+          lng: e.longitude,
+          label: e.location || 'GPS',
+          isGps: true,
           isLast: false,
           event: e,
         });
-      }
-
-      // Draw the destination branch as the next point when it is known.
-      // ไม่แสดงปลายทางสำหรับ CREATED event — รอจนกว่าจะมีการเคลื่อนไหวจริง
-      if (e.title !== 'รับพัสดุเข้าระบบ' && e.destLocation && BRANCH_COORDS[e.destLocation]) {
-        entries.push({
-          ...BRANCH_COORDS[e.destLocation],
-          label: e.destLocation,
-          isGps: false,
-          isLast: false,
-          event: e,
-        });
-      } else if (!resolveCoords(e) && e.description?.includes('ไปยังสาขา:')) {
-        const match = e.description.match(/ไปยังสาขา:\s*(.*)/);
-        const dest = match?.[1]?.trim();
-        if (dest && BRANCH_COORDS[dest]) {
-          entries.push({
-            ...BRANCH_COORDS[dest],
-            label: dest,
-            isGps: false,
-            isLast: false,
-            event: e,
-          });
-        }
       }
     }
 
@@ -116,7 +62,13 @@ function TrackingMap({ events }: TrackingMapProps) {
       deduped[deduped.length - 1].isLast = true;
     }
 
-    const hasUnresolved = events.some(e => e.location && !resolveCoords(e));
+    // hasUnresolved = มี event ที่ไม่มี GPS (แสดงเพื่อ inform user)
+    const hasUnresolved = events.some(e =>
+      e.title !== 'รับพัสดุเข้าระบบ' &&
+      e.status === 'completed' &&
+      (typeof e.latitude !== 'number' || typeof e.longitude !== 'number')
+    );
+
     return { pathEntries: deduped, hasUnresolved };
   }, [events]);
 
@@ -278,9 +230,13 @@ function TrackingMap({ events }: TrackingMapProps) {
       {!hasRouteData && (
         <div className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-secondary bg-secondary-container/10 border-b border-outline-variant/10 flex items-center gap-2">
           <span className="material-symbols-outlined text-base">info</span>
-          {hasUnresolved
-            ? 'พบสาขาที่ไม่มีพิกัดในระบบ แสดงจุดศูนย์กลางหลัก'
-            : 'ยังไม่มีข้อมูลตำแหน่งพัสดุ แสดงจุดศูนย์กลางหลัก'}
+          ยังไม่มีข้อมูล GPS — แผนที่จะแสดงเมื่อมีการยืนยันรับพัสดุ
+        </div>
+      )}
+      {hasRouteData && hasUnresolved && (
+        <div className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-amber-700 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
+          <span className="material-symbols-outlined text-base">warning</span>
+          บางจุดไม่มีข้อมูล GPS จึงไม่แสดงบนแผนที่
         </div>
       )}
       <MapView
@@ -292,13 +248,8 @@ function TrackingMap({ events }: TrackingMapProps) {
       <div className="px-5 py-3 bg-surface-container-low border-t border-outline-variant/10 text-[10px] font-black text-on-surface-variant/40 uppercase tracking-widest flex items-center justify-between">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-600" /> จุดแวะพัก
+            <span className="w-2 h-2 rounded-full bg-green-600" /> GPS จริง
           </span>
-          {hasGpsMarkers && (
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-green-600" /> GPS จริง
-            </span>
-          )}
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> จุดล่าสุด
           </span>

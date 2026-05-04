@@ -8,7 +8,7 @@ import Timeline from '@/components/Timeline';
 import ImagePopup from '@/components/ImagePopup';
 import { toast } from 'sonner';
 import type { Parcel } from '@/types/parcel';
-import { getParcel, searchParcels, BRANCHES_WITH_COORDS } from '@/lib/parcelService';
+import { getParcel, searchParcels } from '@/lib/parcelService';
 import { parseParcelTimeline } from '@/lib/timeline';
 import TrackingMap from '@/components/TrackingMap';
 import { formatThaiDateTime } from '@/lib/dateUtils';
@@ -94,18 +94,14 @@ export default function Track() {
 
   const timelineEvents = useMemo(() => parcel ? parseParcelTimeline(parcel) : [], [parcel]);
 
-  /** True when we have location data to display on the map. */
+  /** True when we have GPS location data to display on the map. */
   const hasLocationData = useMemo(() => {
     if (!parcel) return false;
-    // GPS coordinates available?
-    if (typeof parcel['Latitude'] === 'number' && typeof parcel['Longitude'] === 'number') return true;
-    if (parcel.events?.some(event => typeof event.latitude === 'number' && typeof event.longitude === 'number')) return true;
-    // Known branch coordinates available?
-    return (
-      BRANCHES_WITH_COORDS.includes(parcel['สาขาผู้ส่ง']) ||
-      BRANCHES_WITH_COORDS.includes(parcel['สาขาผู้รับ'])
+    // เช็คเฉพาะ GPS จริงจาก events
+    return timelineEvents.some(
+      event => typeof event.latitude === 'number' && typeof event.longitude === 'number'
     );
-  }, [parcel]);
+  }, [parcel, timelineEvents]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-5 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">

@@ -10,7 +10,6 @@ import { useDebounce } from '@/hooks/useDebounce';
 import StatusBadge from '@/components/StatusBadge';
 import type { Parcel } from '@/types/parcel';
 import { toast } from 'sonner';
-import { BRANCHES_WITH_COORDS } from '@/lib/parcelService';
 import { parseParcelTimeline } from '@/lib/timeline';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatThaiDateTime } from '@/lib/dateUtils';
@@ -178,9 +177,9 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
   /** True when the selected parcel has at least one known-coordinate branch. */
   const selectedParcelHasKnownBranches = useMemo(() => {
     if (!selectedParcel) return false;
-    return selectedTimelineEvents.some(event => typeof event.latitude === 'number' && typeof event.longitude === 'number')
-      || BRANCHES_WITH_COORDS.includes(selectedParcel['สาขาผู้ส่ง'])
-      || BRANCHES_WITH_COORDS.includes(selectedParcel['สาขาผู้รับ']);
+    return selectedTimelineEvents.some(
+      event => typeof event.latitude === 'number' && typeof event.longitude === 'number'
+    );
   }, [selectedParcel, selectedTimelineEvents]);
 
   const clearFilters = () => { setSearchTerm(''); setStatusFilter('ทั้งหมด'); setCurrentPage(1); };
