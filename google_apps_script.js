@@ -111,11 +111,12 @@ function formatThaiDateForSheet(value) {
   if (!date || isNaN(date.getTime())) return value ? String(value) : "";
 
   const tz = Session.getScriptTimeZone();
-  const day = Number(Utilities.formatDate(date, tz, "d"));
+  const day   = Number(Utilities.formatDate(date, tz, "d"));
   const month = Number(Utilities.formatDate(date, tz, "M"));
-  const year = Number(Utilities.formatDate(date, tz, "yyyy")) + 543;
+  const year  = Number(Utilities.formatDate(date, tz, "yyyy")) + 543;
+  const time  = Utilities.formatDate(date, tz, "HH:mm");
 
-  return day + " " + THAI_MONTHS[month - 1] + " " + year;
+  return day + " " + THAI_MONTHS[month - 1] + " " + year + " " + time + " น.";
 }
 
 function formatSheetDateValue(value) {
@@ -1269,7 +1270,6 @@ function handleLogin(payload) {
 
       if (storedPin !== pin) {
         recordFailedLogin(employeeId);
-        writeAuditLog(employeeId, "LOGIN_FAILED", employeeId, "Wrong PIN");
         const remaining = rateLimit.remaining - 1;
         const msg = remaining > 0
           ? "รหัส PIN ไม่ถูกต้อง (เหลือ " + remaining + " ครั้ง)"
@@ -1278,14 +1278,12 @@ function handleLogin(payload) {
       }
 
       clearLoginAttempts(employeeId);
-      writeAuditLog(employeeId, "LOGIN_SUCCESS", employeeId, "Role: " + role);
       const token = generateToken(employeeId, role, getApiKey());
       return createJsonResponse({ success: true, user: { employeeId, name, branch, role, token } });
     }
   }
 
   // User not found — do NOT auto-create; require registration via setupPin
-  writeAuditLog(employeeId, "LOGIN_NOT_FOUND", employeeId, "Employee ID not registered");
   return createJsonResponse({ success: false, error: "ไม่พบรหัสพนักงานนี้ในระบบ กรุณาสมัครสมาชิกก่อน" });
 }
 
@@ -1318,7 +1316,6 @@ function handleSetupPin(payload) {
       const finalName = name || String(data[i][1]).trim();
       const finalBranch = branch || String(data[i][2]).trim();
 
-      writeAuditLog(employeeId, "PIN_SETUP", employeeId, "PIN set, branch: " + finalBranch);
       const token = generateToken(employeeId, role, getApiKey());
       return createJsonResponse({ success: true, user: { employeeId, name: finalName, branch: finalBranch, role, token } });
     }
@@ -1326,7 +1323,6 @@ function handleSetupPin(payload) {
 
   // User not found — auto-create new user and set PIN in one step
   sheet.appendRow([employeeId, name || "Unknown", branch || "Unknown", "USER", pin, formatThaiDateForSheet(new Date())]);
-  writeAuditLog(employeeId, "USER_REGISTERED", employeeId, "New user registered, branch: " + (branch || "Unknown"));
   const token = generateToken(employeeId, "USER", getApiKey());
   return createJsonResponse({ success: true, user: { employeeId, name: name || "Unknown", branch: branch || "Unknown", role: "USER", token } });
 }
