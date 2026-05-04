@@ -1,0 +1,230 @@
+/**
+ * NativeSelect — custom dropdown that works inside Radix Dialog.
+ * Renders the list via createPortal at z-[9999] with pointer-events: auto
+ * so Radix's body pointer-events:none doesn't block clicks.
+ * Supports an "อื่นๆ" option that reveals a custom text input.
+ */
+
+import { useState, useRef, useEffect, useCallback, useId } from 'react';
+import { createPortal } from 'react-dom';
+
+export const OTHER_VALUE = '__OTHER__';
+
+interface NativeSelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  placeholder?: string;
+  icon?: string;
+  disabled?: boolean;
+  className?: string;
+  otherLabel?: string;
+  otherPlaceholder?: string;
+  allowOther?: boolean;
+}
+
+export default function NativeSelect({
+  value,
+  onChange,
+  options,
+  placeholder = 'เลือก...',
+  icon,
+  disabled = false,
+  className = '',
+  otherLabel = 'อื่นๆ (ระบุเอง)',
+  otherPlaceholder = 'ระบุเอง...',
+  allowOther = true,
+}: NativeSelectProps) {
+  const inputId = useId();
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const customInputRef = useRef<HTMLInputElement>(null);
+
+  const isCustom = value !== '' && value !== OTHER_VALUE && !options.includes(value);
+  const showCustomInput = value === OTHER_VALUE || isCustom;
+
+  // Label shown in the trigger button
+  const displayLabel = (() => {
+    if (!value) return null;
+    if (value === OTHER_VALUE) return otherLabel;
+    if (isCustom) return value; // show the typed custom text
+    return value;
+  })();
+
+  const updateRect = useCallback(() => {
+    if (btnRef.current) setRect(btnRef.current.getBoundingClientRect());
+  }, []);
+
+  const handleOpen = () => {
+    if (disabled) return;
+    updateRect();
+    setOpen(v => !v);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (
+        btnRef.current?.contains(e.target as Node) ||
+        listRef.current?.contains(e.target as Node)
+      ) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    window.addEventListener('scroll', updateRect, true);
+    window.addEventListener('resize', updateRect);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      window.removeEventListener('scroll', updateRect, true);
+      window.removeEventListener('resize', updateRect);
+    };
+  }, [open, updateRect]);
+
+  // Focus custom input when it appears
+  useEffect(() => {
+    if (showCustomInput) {
+      setTimeout(() => customInputRef.current?.focus(), 50);
+    }
+  }, [showCustomInput]);
+
+  const spaceBelow = rect ? window.innerHeight - rect.bottom : 999;
+  const dropUp = rect ? spaceBelow < 260 : false;
+
+  const listStyle: React.CSSProperties = rect
+    ? {
+        position: 'fixed',
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+        pointerEvents: 'auto',
+        ...(dropUp
+          ? { bottom: window.innerHeight - rect.top + 6 }
+          : { top: rect.bottom + 6 }),
+      }
+    : { display: 'none' };
+
+  const allOptions = [
+    ...options,
+    ...(allowOther ? [OTHER_VALUE] : []),
+  ];
+
+  return (
+    <div className={`space-y-2 ${className}`}>
+      {/* Trigger button */}
+      <button
+        ref={btnRef}
+        id={inputId}
+        type="button"
+        disabled={disabled}
+        onClick={handleOpen}
+        className={[
+          'w-full flex items-center gap-2.5 h-11 rounded-xl border px-3 text-sm font-display text-left transition-all outline-none',
+          open
+            ? 'border-primary ring-2 ring-primary/15 bg-white'
+            : 'border-outline-variant/60 bg-white hover:border-primary/40',
+          disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+          displayLabel ? 'text-on-surface' : 'text-on-surface-variant/50',
+        ].join(' ')}
+      >
+        {icon && (
+          <span className="material-symbols-outlined text-[18px] text-on-surface-variant/40 shrink-0">
+            {icon}
+          </span>
+        )}
+        <span className="flex-1 truncate">
+          {displayLabel ?? placeholder}
+        </span>
+        <span
+          className={`material-symbols-outlined text-[18px] text-on-surface-variant/40 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        >
+          expand_more
+        </span>
+      </button>
+
+      {/* Dropdown list — portalled to body, pointer-events: auto overrides Radix */}
+      {open && rect && createPortal(
+        <div
+          ref={listRef}
+          style={listStyle}
+          className="rounded-2xl border border-outline-variant/20 bg-white shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150"
+        >
+          <div className="max-h-60 overflow-y-auto py-1.5">
+            {allOptions.map(opt => {
+              const isOther = opt === OTHER_VALUE;
+              const label = isOther ? otherLabel : opt;
+              const isSelected = isOther
+                ? value === OTHER_VALUE || isCustom
+                : value === opt;
+
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onMouseDown={e => {
+                    // Use mousedown so it fires before the blur/close handler
+                    e.preventDefault();
+                    onChange(isOther ? OTHER_VALUE : opt);
+                    setOpen(false);
+                  }}
+                  className={[
+                    'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-display text-left transition-colors',
+                    isSelected
+                      ? 'bg-primary/8 text-primary font-bold'
+                      : 'text-on-surface hover:bg-surface-container-lowest',
+                    isOther ? 'border-t border-outline-variant/10 mt-1 pt-3' : '',
+                  ].join(' ')}
+                >
+                  {isOther && (
+                    <span className="material-symbols-outlined text-[16px] text-on-surface-variant/50 shrink-0">
+                      edit
+                    </span>
+                  )}
+                  <span className="flex-1 truncate">{label}</span>
+                  {isSelected && (
+                    <span
+                      className="material-symbols-outlined text-[15px] text-primary shrink-0"
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      check
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Custom text input */}
+      {showCustomInput && (
+        <div className="relative animate-in slide-in-from-top-1 duration-200">
+          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-primary/50 select-none">
+            edit
+          </span>
+          <input
+            ref={customInputRef}
+            type="text"
+            value={isCustom ? value : ''}
+            onChange={e => onChange(e.target.value || OTHER_VALUE)}
+            disabled={disabled}
+            placeholder={otherPlaceholder}
+            maxLength={100}
+            className="w-full h-11 rounded-xl border border-primary/30 bg-primary/[0.03] pl-9 pr-4 text-sm font-display outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-50"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Resolves the final value from a NativeSelect before submitting:
+ * - OTHER_VALUE (nothing typed yet) → ''
+ * - anything else → value as-is
+ */
+export function resolveSelectValue(value: string): string {
+  return value === OTHER_VALUE ? '' : value;
+}

@@ -6,8 +6,8 @@ import { formatThaiDate, getDateTime } from '@/lib/dateUtils';
 import { normalizeRole, ROLE_LABELS, type AppRole } from '@/lib/roles';
 import { getBranches } from '@/lib/parcelService';
 import { toast } from 'sonner';
-import SelectDropdown from '@/components/SelectDropdown';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import NativeSelect, { resolveSelectValue } from '@/components/NativeSelect';
 
 type PageId = "dashboard" | "create" | "confirm" | "track" | "users";
 
@@ -131,7 +131,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
     e.preventDefault();
     const { name, branch, currentPassword, newPassword, confirmPassword } = profileForm;
     if (!name.trim()) { toast.error('กรุณากรอกชื่อ-นามสกุล'); return; }
-    if (!branch.trim()) { toast.error('กรุณาเลือกสาขา'); return; }
+    if (!branch.trim() || !resolveSelectValue(branch)) { toast.error('กรุณาเลือกสาขา'); return; }
     if (newPassword && newPassword.length < 4) { toast.error('รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัวอักษร'); return; }
     if (newPassword && newPassword !== confirmPassword) { toast.error('รหัสผ่านใหม่ไม่ตรงกัน'); return; }
     if (newPassword && !currentPassword) { toast.error('กรุณากรอกรหัสผ่านปัจจุบัน'); return; }
@@ -139,7 +139,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
     setProfileLoading(true);
     const res = await updateUserProfile(
       name.trim() !== user?.name ? name.trim() : undefined,
-      branch.trim() !== user?.branch ? branch.trim() : undefined,
+      resolveSelectValue(branch) !== user?.branch ? resolveSelectValue(branch) : undefined,
       newPassword || undefined,
       newPassword ? currentPassword : undefined,
     );
@@ -417,13 +417,14 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
             {/* Branch */}
             <div>
               <label className="block text-sm font-bold text-on-surface-variant mb-1.5">สาขาประจำ</label>
-              <SelectDropdown
+              <NativeSelect
                 value={profileForm.branch}
                 onChange={v => setProfileForm(f => ({ ...f, branch: v }))}
-                options={getBranches().map(b => ({ value: b, label: b }))}
+                options={getBranches()}
                 placeholder="เลือกสาขา"
                 icon="apartment"
                 disabled={profileLoading}
+                otherPlaceholder="ระบุชื่อสาขา"
               />
             </div>
 

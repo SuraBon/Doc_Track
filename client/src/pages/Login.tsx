@@ -6,8 +6,7 @@ import { getParcel, searchParcels, getBranches, setupPin } from '@/lib/parcelSer
 import StatusBadge from '@/components/StatusBadge';
 import { formatThaiDate } from '@/lib/dateUtils';
 import type { Parcel } from '@/types/parcel';
-import SelectDropdown from '@/components/SelectDropdown';
-
+import NativeSelect, { resolveSelectValue } from '@/components/NativeSelect';
 
 
 export default function Login() {
@@ -97,12 +96,12 @@ export default function Login() {
     if (!regId.trim()) { toast.error('กรุณากรอกรหัสพนักงาน'); return; }
     if (regPassword.length < 4) { toast.error('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร'); return; }
     if (!regName.trim()) { toast.error('กรุณากรอกชื่อ-นามสกุล'); return; }
-    if (!regBranch) { toast.error('กรุณาเลือกสาขา'); return; }
+    if (!regBranch || !resolveSelectValue(regBranch)) { toast.error('กรุณาเลือกสาขา'); return; }
 
     setIsRegistering(true);
     try {
       // ใช้ setupPin โดยตรง (ไม่ผ่าน AuthContext) เพื่อไม่ให้ login อัตโนมัติ
-      const res = await setupPin(regId.trim(), regPassword, regName.trim(), regBranch);
+      const res = await setupPin(regId.trim(), regPassword, regName.trim(), resolveSelectValue(regBranch));
       if (res.success) {
         toast.success(`สมัครสมาชิกสำเร็จ! ยินดีต้อนรับ ${regName.trim()}`, {
           description: 'กรุณาเข้าสู่ระบบด้วยรหัสที่สมัครไว้',
@@ -344,13 +343,14 @@ export default function Login() {
 
             <div>
               <label className="block text-sm font-bold text-on-surface-variant mb-1.5">สาขาประจำ</label>
-              <SelectDropdown
+              <NativeSelect
                 value={regBranch}
                 onChange={setRegBranch}
-                options={branches.map(b => ({ value: b, label: b }))}
+                options={branches}
                 placeholder="เลือกสาขา"
                 icon="apartment"
                 disabled={isRegistering}
+                otherPlaceholder="ระบุชื่อสาขา"
               />
             </div>
 

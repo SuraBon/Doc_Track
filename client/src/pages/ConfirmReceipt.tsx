@@ -11,13 +11,12 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useParcelStore } from '@/hooks/useParcelStore';
 import PinInput from '@/components/PinInput';
 import { getBranches, getParcel } from '@/lib/parcelService';
-import SelectDropdown from '@/components/SelectDropdown';
+import NativeSelect, { OTHER_VALUE, resolveSelectValue } from '@/components/NativeSelect';
 import { toast } from 'sonner';
 import type { Parcel } from '@/types/parcel';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { MapView } from '@/components/Map';
 
-const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
 
 /** Rendered outside the main component so it never remounts on state changes. */
 function StepIndicator({ currentStep }: { currentStep: number }) {
@@ -139,7 +138,7 @@ export default function ConfirmReceipt({
           currentBranch = match[3];
         }
 
-        setForwardFromBranch(branches.includes(currentBranch) ? currentBranch : OTHER_BRANCH_VALUE);
+        setForwardFromBranch(branches.includes(currentBranch) ? currentBranch : OTHER_VALUE);
         if (!branches.includes(currentBranch)) {
           setCustomForwardFromBranch(currentBranch);
         }
@@ -273,8 +272,8 @@ export default function ConfirmReceipt({
       let eventDestLocation: string | undefined;
       let eventPerson: string | undefined;
 
-      const finalForwardFromBranch = forwardFromBranch === OTHER_BRANCH_VALUE ? customForwardFromBranch.trim() : forwardFromBranch.trim();
-      const finalForwardToBranch = forwardToBranch === OTHER_BRANCH_VALUE ? customForwardToBranch.trim() : forwardToBranch.trim();
+      const finalForwardFromBranch = resolveSelectValue(forwardFromBranch) || customForwardFromBranch.trim();
+      const finalForwardToBranch = resolveSelectValue(forwardToBranch) || customForwardToBranch.trim();
 
       if (isForwarding && finalForwardToBranch) {
         eventType = 'FORWARD';
@@ -610,41 +609,27 @@ export default function ConfirmReceipt({
                         />
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <SelectDropdown
+                        <div>
+                          <NativeSelect
                             value={forwardFromBranch}
                             onChange={setForwardFromBranch}
-                            options={[...branches.map(b => ({ value: b, label: b })), { value: OTHER_BRANCH_VALUE, label: 'อื่นๆ' }]}
+                            options={branches}
                             placeholder="จากสาขา"
                             icon="flight_takeoff"
+                            otherLabel="อื่นๆ"
+                            otherPlaceholder="ระบุชื่อสาขาต้นทาง"
                           />
-                          {forwardFromBranch === OTHER_BRANCH_VALUE && (
-                            <input
-                              placeholder="ระบุชื่อสาขาต้นทาง"
-                              value={customForwardFromBranch}
-                              onChange={(e) => setCustomForwardFromBranch(e.target.value)}
-                              maxLength={100}
-                              className="w-full bg-white border border-outline-variant rounded-xl px-4 py-2.5 text-sm focus:ring-1 focus:ring-secondary outline-none font-display animate-in slide-in-from-top-2 duration-200"
-                            />
-                          )}
                         </div>
-                        <div className="space-y-2">
-                          <SelectDropdown
+                        <div>
+                          <NativeSelect
                             value={forwardToBranch}
                             onChange={setForwardToBranch}
-                            options={[...branches.map(b => ({ value: b, label: b })), { value: OTHER_BRANCH_VALUE, label: 'อื่นๆ' }]}
+                            options={branches}
                             placeholder="ไปสาขา"
                             icon="flight_land"
+                            otherLabel="อื่นๆ"
+                            otherPlaceholder="ระบุชื่อสาขาปลายทาง"
                           />
-                          {forwardToBranch === OTHER_BRANCH_VALUE && (
-                            <input
-                              placeholder="ระบุชื่อสาขาปลายทาง"
-                              value={customForwardToBranch}
-                              onChange={(e) => setCustomForwardToBranch(e.target.value)}
-                              maxLength={100}
-                              className="w-full bg-white border border-outline-variant rounded-xl px-4 py-2.5 text-sm focus:ring-1 focus:ring-secondary outline-none font-display animate-in slide-in-from-top-2 duration-200"
-                            />
-                          )}
                         </div>
                       </div>
                     </div>
@@ -705,9 +690,8 @@ export default function ConfirmReceipt({
                 disabled={isLoading
                   || (isForwarding && (
                     !forwardSender.trim()
-                    || !forwardToBranch
-                    || (forwardToBranch === OTHER_BRANCH_VALUE && !customForwardToBranch.trim())
-                    || (forwardFromBranch === OTHER_BRANCH_VALUE && !customForwardFromBranch.trim())
+                    || !resolveSelectValue(forwardToBranch)
+                    || !resolveSelectValue(forwardFromBranch)
                   ))
                   || (isProxy && !proxyName.trim())}
                 className="flex items-center justify-center gap-2 h-14 flex-[2] bg-green-600 text-white rounded-2xl font-display font-bold shadow-lg shadow-green-200 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
@@ -774,14 +758,14 @@ export default function ConfirmReceipt({
                   <div className="flex-1 bg-white rounded-xl px-3 py-2 border border-outline-variant/20 text-center">
                     <p className="text-[9px] text-on-surface-variant/50 font-bold uppercase tracking-wider mb-0.5">จากสาขา</p>
                     <p className="text-sm font-black text-primary truncate">
-                      {forwardFromBranch === OTHER_BRANCH_VALUE ? customForwardFromBranch : forwardFromBranch}
+                      {resolveSelectValue(forwardFromBranch)}
                     </p>
                   </div>
                   <span className="material-symbols-outlined text-outline-variant text-xl shrink-0">arrow_forward</span>
                   <div className="flex-1 bg-white rounded-xl px-3 py-2 border border-outline-variant/20 text-center">
                     <p className="text-[9px] text-on-surface-variant/50 font-bold uppercase tracking-wider mb-0.5">ไปสาขา</p>
                     <p className="text-sm font-black text-primary truncate">
-                      {forwardToBranch === OTHER_BRANCH_VALUE ? customForwardToBranch : forwardToBranch}
+                      {resolveSelectValue(forwardToBranch)}
                     </p>
                   </div>
                 </div>

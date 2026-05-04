@@ -11,11 +11,10 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import PinInput from '@/components/PinInput';
 import { formatThaiDate } from '@/lib/dateUtils';
-import SelectDropdown from '@/components/SelectDropdown';
+import NativeSelect, { OTHER_VALUE, resolveSelectValue } from '@/components/NativeSelect';
 import QRCode from 'qrcode';
 
 const DOC_TYPES = ['เอกสาร', 'พัสดุ'];
-const OTHER_BRANCH_VALUE = '__OTHER_BRANCH__';
 
 export default function CreateParcel() {
   const { createParcel } = useParcelStore();
@@ -34,9 +33,7 @@ export default function CreateParcel() {
   const [customSenderBranch, setCustomSenderBranch] = useState('');
   const [customReceiverBranch, setCustomReceiverBranch] = useState('');
   const [customDocType, setCustomDocType] = useState('');
-  const [pin, setPin] = useState('');
-
-  const [createdTrackingId, setCreatedTrackingId] = useState<string | null>(null);
+  const [pin, setPin] = useState('');  const [createdTrackingId, setCreatedTrackingId] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [isResultOpen, setIsResultOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -55,13 +52,13 @@ export default function CreateParcel() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  /** Resolves the final submitted values, replacing OTHER_BRANCH_VALUE with custom inputs. */
+  /** Resolves the final submitted values, replacing OTHER_VALUE with custom inputs. */
   const getFinalValues = () => ({
     senderName:     formData.senderName.trim(),
-    senderBranch:   formData.senderBranch   === OTHER_BRANCH_VALUE ? customSenderBranch.trim()   : formData.senderBranch.trim(),
+    senderBranch:   resolveSelectValue(formData.senderBranch),
     receiverName:   formData.receiverName.trim(),
-    receiverBranch: formData.receiverBranch === OTHER_BRANCH_VALUE ? customReceiverBranch.trim() : formData.receiverBranch.trim(),
-    docType:        formData.docType        === OTHER_BRANCH_VALUE ? customDocType.trim()        : formData.docType.trim(),
+    receiverBranch: resolveSelectValue(formData.receiverBranch),
+    docType:        resolveSelectValue(formData.docType),
     description:    formData.description.trim(),
     note:           formData.note.trim(),
   });
@@ -108,9 +105,6 @@ export default function CreateParcel() {
         setCreatedTrackingId(trackingId);
         setIsResultOpen(true);
         setFormData({ senderName: '', senderBranch: '', receiverName: '', receiverBranch: '', docType: '', description: '', note: '' });
-        setCustomSenderBranch('');
-        setCustomReceiverBranch('');
-        setCustomDocType('');
         setPin('');
       } else {
         toast.error('ไม่สามารถสร้างรายการได้');
@@ -171,24 +165,14 @@ export default function CreateParcel() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-1">สาขาผู้ส่ง *</label>
-                <SelectDropdown
+                <NativeSelect
                   value={formData.senderBranch}
                   onChange={v => setFormData(p => ({ ...p, senderBranch: v }))}
-                  options={[...branches.map(b => ({ value: b, label: b })), { value: OTHER_BRANCH_VALUE, label: 'อื่นๆ (ระบุเอง)' }]}
+                  options={branches}
                   placeholder="เลือกสาขา"
                   icon="apartment"
+                  otherPlaceholder="ระบุชื่อสาขาผู้ส่ง"
                 />
-                {formData.senderBranch === OTHER_BRANCH_VALUE && (
-                  <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
-                    <input
-                      value={customSenderBranch}
-                      onChange={(e) => setCustomSenderBranch(e.target.value)}
-                      placeholder="ระบุชื่อสาขาผู้ส่ง"
-                      maxLength={100}
-                      className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-display"
-                    />
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -224,24 +208,14 @@ export default function CreateParcel() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-1">สาขาผู้รับ *</label>
-                <SelectDropdown
+                <NativeSelect
                   value={formData.receiverBranch}
                   onChange={v => setFormData(p => ({ ...p, receiverBranch: v }))}
-                  options={[...branches.map(b => ({ value: b, label: b })), { value: OTHER_BRANCH_VALUE, label: 'อื่นๆ (ระบุเอง)' }]}
+                  options={branches}
                   placeholder="เลือกสาขา"
                   icon="home_pin"
+                  otherPlaceholder="ระบุชื่อสาขาผู้รับ"
                 />
-                {formData.receiverBranch === OTHER_BRANCH_VALUE && (
-                  <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
-                    <input
-                      value={customReceiverBranch}
-                      onChange={(e) => setCustomReceiverBranch(e.target.value)}
-                      placeholder="ระบุชื่อสาขาผู้รับ"
-                      maxLength={100}
-                      className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-display"
-                    />
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -266,24 +240,14 @@ export default function CreateParcel() {
             <div className="space-y-5">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-1">ประเภท *</label>
-                <SelectDropdown
+                <NativeSelect
                   value={formData.docType}
                   onChange={v => setFormData(p => ({ ...p, docType: v }))}
-                  options={[...DOC_TYPES.map(t => ({ value: t, label: t })), { value: OTHER_BRANCH_VALUE, label: 'อื่นๆ (ระบุเอง)' }]}
+                  options={DOC_TYPES}
                   placeholder="เลือกประเภท"
                   icon="category"
+                  otherPlaceholder="ระบุประเภทพัสดุเอง"
                 />
-                {formData.docType === OTHER_BRANCH_VALUE && (
-                  <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
-                    <input
-                      value={customDocType}
-                      onChange={(e) => setCustomDocType(e.target.value)}
-                      placeholder="ระบุประเภทพัสดุเอง"
-                      maxLength={100}
-                      className="w-full bg-surface-container-low border border-outline-variant rounded-lg px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none font-display"
-                    />
-                  </div>
-                )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-1">รายละเอียดเพิ่มเติม</label>
@@ -358,7 +322,7 @@ export default function CreateParcel() {
                       <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mb-0.5 sm:mb-1">ผู้ส่งต้นทาง</p>
                       <p className="text-sm sm:text-base font-bold text-on-surface leading-tight mb-0.5 sm:mb-1">{formData.senderName}</p>
                       <p className="text-xs text-on-surface-variant sm:max-w-[120px] truncate">
-                        {formData.senderBranch === OTHER_BRANCH_VALUE ? customSenderBranch : formData.senderBranch}
+                        {resolveSelectValue(formData.senderBranch)}
                       </p>
                     </div>
                   </div>
@@ -384,7 +348,7 @@ export default function CreateParcel() {
                       <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mb-0.5 sm:mb-1">ผู้รับปลายทาง</p>
                       <p className="text-sm sm:text-base font-bold text-on-surface leading-tight mb-0.5 sm:mb-1">{formData.receiverName}</p>
                       <p className="text-xs text-on-surface-variant sm:max-w-[120px] truncate">
-                        {formData.receiverBranch === OTHER_BRANCH_VALUE ? customReceiverBranch : formData.receiverBranch}
+                        {resolveSelectValue(formData.receiverBranch)}
                       </p>
                     </div>
                   </div>
@@ -400,7 +364,7 @@ export default function CreateParcel() {
                       <p className="text-[10px] font-bold uppercase tracking-widest">ประเภทพัสดุ</p>
                     </div>
                     <p className="text-sm font-bold text-on-surface">
-                      {formData.docType === OTHER_BRANCH_VALUE ? customDocType : formData.docType}
+                      {resolveSelectValue(formData.docType)}
                     </p>
                   </div>
                   <div className="bg-surface-container-low/50 p-4 rounded-2xl">
