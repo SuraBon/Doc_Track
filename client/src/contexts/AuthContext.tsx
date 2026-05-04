@@ -23,11 +23,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const authTransitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearSession = () => {
+    if (authTransitionTimer.current) clearTimeout(authTransitionTimer.current);
     setUser(null);
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(LAST_ACTIVE_KEY);
+  };
+
+  const completeLoginAfterFeedback = (authenticatedUser: User) => {
+    if (authTransitionTimer.current) clearTimeout(authTransitionTimer.current);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(authenticatedUser));
+    resetInactivityTimer();
+    authTransitionTimer.current = setTimeout(() => {
+      setUser(authenticatedUser);
+      authTransitionTimer.current = null;
+    }, 900);
   };
 
   const resetInactivityTimer = () => {
@@ -79,37 +91,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('auth_error', handleAuthError);
       activityEvents.forEach(e => window.removeEventListener(e, handleActivity));
       if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      if (authTransitionTimer.current) clearTimeout(authTransitionTimer.current);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loginUser = async (employeeId: string, pin?: string) => {
-    setLoading(true);
-    try {
-      const res = await login(employeeId, pin);
-      if (res.success && res.user) {
-        setUser(res.user);
-        localStorage.setItem(SESSION_KEY, JSON.stringify(res.user));
-        resetInactivityTimer();
-      }
-      return res;
-    } finally {
-      setLoading(false);
+    const res = await login(employeeId, pin);
+    if (res.success && res.user) {
+      completeLoginAfterFeedback(res.user);
     }
+    return res;
   };
 
   const setupUserPin = async (employeeId: string, pin: string, name: string, branch: string) => {
-    setLoading(true);
-    try {
-      const res = await setupPin(employeeId, pin, name, branch);
-      if (res.success && res.user) {
-        setUser(res.user);
-        localStorage.setItem(SESSION_KEY, JSON.stringify(res.user));
-        resetInactivityTimer();
-      }
-      return res;
-    } finally {
-      setLoading(false);
+    const res = await setupPin(employeeId, pin, name, branch);
+    if (res.success && res.user) {
+      completeLoginAfterFeedback(res.user);
     }
+    return res;
   };
 
   const logout = () => {

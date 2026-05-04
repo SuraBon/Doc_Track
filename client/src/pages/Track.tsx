@@ -99,27 +99,13 @@ export default function Track() {
 
       {/* Header */}
       <section className="rounded-2xl border border-outline-variant/25 bg-white/90 px-5 py-5 shadow-sm backdrop-blur-xl sm:px-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-sm">
-              <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>location_searching</span>
-            </div>
-            <div>
-              <h1 className="font-display text-3xl font-black leading-tight text-primary sm:text-[34px]">ติดตามพัสดุ</h1>
-              <p className="mt-1 text-sm text-on-surface-variant/75">ค้นหาสถานะพัสดุจากหมายเลขติดตาม หรือชื่อผู้รับ</p>
-            </div>
+        <div className="flex items-start gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-sm">
+            <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>location_searching</span>
           </div>
-          <div className="grid grid-cols-3 gap-2 rounded-2xl bg-surface-container-lowest p-1.5 ring-1 ring-outline-variant/20 lg:w-[340px]">
-            {[
-              { icon: 'manage_search', label: 'ค้นหาเร็ว' },
-              { icon: 'route', label: 'ดูเส้นทาง' },
-              { icon: 'history', label: 'ประวัติล่าสุด' },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-primary">
-                <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-                <p className="hidden text-xs font-bold text-on-surface-variant/70 sm:block">{item.label}</p>
-              </div>
-            ))}
+          <div>
+            <h1 className="font-display text-3xl font-black leading-tight text-primary sm:text-[34px]">ติดตามพัสดุ</h1>
+            <p className="mt-1 text-sm text-on-surface-variant/75">ค้นหาสถานะพัสดุจากหมายเลขติดตาม หรือชื่อผู้รับ</p>
           </div>
         </div>
       </section>

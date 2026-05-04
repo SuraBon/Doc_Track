@@ -1,6 +1,6 @@
 import { useState } from 'react';import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowRight, PackageSearch, Search, UserPlus } from 'lucide-react';
+import { ArrowRight, CheckCircle2, PackageSearch, Search, UserPlus, XCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getParcel, searchParcels, getBranches, setupPin } from '@/lib/parcelService';
 import StatusBadge from '@/components/StatusBadge';
@@ -8,6 +8,34 @@ import { formatThaiDate } from '@/lib/dateUtils';
 import type { Parcel } from '@/types/parcel';
 import NativeSelect, { resolveSelectValue } from '@/components/NativeSelect';
 
+type AuthDialogState = {
+  open: boolean;
+  status: 'loading' | 'success' | 'error';
+  title: string;
+  message: string;
+};
+
+const DEFAULT_LOGIN_ERROR = 'ไม่พบรหัสหรือรหัสผ่านของท่านไม่ถูกต้อง';
+
+function getLoginErrorMessage(error?: string) {
+  const err = error || '';
+
+  if (err.includes('บัญชีถูกล็อค')) return err;
+  if (err.includes('PIN ไม่ถูกต้อง') || err.includes('รหัสผ่านไม่ถูกต้อง') || err.includes('เหลือ')) {
+    return err || DEFAULT_LOGIN_ERROR;
+  }
+  if (
+    err.includes('ไม่พบรหัสพนักงาน') ||
+    err.includes('กรุณาสมัครสมาชิก') ||
+    err.includes('ไม่พบ') ||
+    err.includes('not found') ||
+    err.includes('UNAVAILABLE')
+  ) {
+    return `${DEFAULT_LOGIN_ERROR} กรุณาตรวจสอบรหัสพนักงาน หรือสมัครสมาชิกใหม่ก่อนเข้าใช้งาน`;
+  }
+
+  return err || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองใหม่อีกครั้ง';
+}
 
 export default function Login() {
   const { loginUser, setupUserPin, loading } = useAuth();
@@ -32,33 +60,67 @@ export default function Login() {
   const [regBranch, setRegBranch] = useState('');
   const [regName, setRegName] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
+  const [authDialog, setAuthDialog] = useState<AuthDialogState>({
+    open: false,
+    status: 'loading',
+    title: '',
+    message: '',
+  });
 
   const branches = getBranches();
+  const isAuthSubmitting = authDialog.open && authDialog.status === 'loading';
+  const isLoginDisabled = loading || isAuthSubmitting;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!employeeId) {
-      toast.error('กรุณากรอกรหัสพนักงาน');
+      const message = 'กรุณากรอกรหัสพนักงานก่อนเข้าสู่ระบบ';
+      setAuthDialog({ open: true, status: 'error', title: DEFAULT_LOGIN_ERROR, message });
+      toast.error(DEFAULT_LOGIN_ERROR, { description: message });
       return;
     }
 
     if (isSetup) {
       if (pin.length < 4 || !name || !branch) {
-        toast.error('กรุณากรอกข้อมูลให้ครบถ้วนและ PIN ต้องมี 4 หลัก');
+        const message = 'กรุณากรอกข้อมูลให้ครบถ้วนและรหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร';
+        setAuthDialog({ open: true, status: 'error', title: 'ตั้งค่าการเข้าใช้งานไม่สำเร็จ', message });
+        toast.error('ตั้งค่าการเข้าใช้งานไม่สำเร็จ', { description: message });
         return;
       }
+      setAuthDialog({
+        open: true,
+        status: 'loading',
+        title: 'กำลังบันทึกข้อมูล',
+        message: 'กรุณารอสักครู่ ระบบกำลังตรวจสอบและบันทึกข้อมูลของท่าน',
+      });
       const res = await setupUserPin(employeeId, pin, name, branch);
       if (res.success) {
+        setAuthDialog({
+          open: true,
+          status: 'success',
+          title: 'เข้าสู่ระบบสำเร็จ',
+          message: 'ตั้งค่ารหัสผ่านและข้อมูลผู้ใช้เรียบร้อยแล้ว',
+        });
         toast.success('ตั้งค่า PIN สำเร็จ');
       } else {
-        toast.error(res.error || 'เกิดข้อผิดพลาดในการตั้งค่า');
+        const message = res.error || 'เกิดข้อผิดพลาดในการตั้งค่า กรุณาลองใหม่อีกครั้ง';
+        setAuthDialog({ open: true, status: 'error', title: 'ตั้งค่าการเข้าใช้งานไม่สำเร็จ', message });
+        toast.error('ตั้งค่าการเข้าใช้งานไม่สำเร็จ', { description: message });
       }
     } else {
       if (!pin) {
-        toast.error('กรุณากรอกรหัสผ่าน');
+        const message = 'กรุณากรอกรหัสผ่านก่อนเข้าสู่ระบบ';
+        setAuthDialog({ open: true, status: 'error', title: DEFAULT_LOGIN_ERROR, message });
+        toast.error(DEFAULT_LOGIN_ERROR, { description: message });
         return;
       }
-      
+
+      setAuthDialog({
+        open: true,
+        status: 'loading',
+        title: 'กำลังเข้าสู่ระบบ',
+        message: 'กรุณารอสักครู่ ระบบกำลังตรวจสอบรหัสพนักงานและรหัสผ่าน',
+      });
       const res = await loginUser(employeeId, pin);
       
       if (res.success) {
@@ -66,27 +128,26 @@ export default function Login() {
           setIsSetup(true);
           setName(res.name !== 'Unknown' ? res.name! : '');
           setBranch(res.branch !== 'Unknown' ? res.branch! : '');
+          setAuthDialog({
+            open: true,
+            status: 'success',
+            title: 'ตรวจสอบสำเร็จ',
+            message: 'เข้าใช้งานครั้งแรก กรุณาตั้งค่ารหัสผ่านและข้อมูลของท่าน',
+          });
           toast.info('เข้าใช้งานครั้งแรก กรุณาตั้งค่า PIN และข้อมูลของท่าน');
         } else {
+          setAuthDialog({
+            open: true,
+            status: 'success',
+            title: 'เข้าสู่ระบบสำเร็จ',
+            message: 'ยืนยันตัวตนเรียบร้อย กำลังเปิดหน้าระบบ',
+          });
           toast.success('เข้าสู่ระบบสำเร็จ');
         }
       } else {
-        // Show specific error messages
-        const err = res.error || '';
-        if (err.includes('บัญชีถูกล็อค')) {
-          toast.error(err, { duration: 6000 });
-        } else if (err.includes('PIN ไม่ถูกต้อง') || err.includes('รหัสผ่านไม่ถูกต้อง') || err.includes('เหลือ')) {
-          toast.error(err || 'รหัสผ่านไม่ถูกต้อง');
-        } else if (err.includes('ไม่พบรหัสพนักงาน') || err.includes('กรุณาสมัครสมาชิก')) {
-          toast.error('ไม่พบรหัสพนักงานนี้ในระบบ', {
-            description: 'กรุณากดปุ่ม "สมัครสมาชิกใหม่" เพื่อลงทะเบียนก่อน',
-            duration: 6000,
-          });
-        } else if (err.includes('ไม่พบ') || err.includes('not found') || err.includes('UNAVAILABLE')) {
-          toast.error('ไม่พบรหัสพนักงานนี้ในระบบ กรุณาตรวจสอบหรือสมัครสมาชิกใหม่');
-        } else {
-          toast.error(err || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
-        }
+        const message = getLoginErrorMessage(res.error);
+        setAuthDialog({ open: true, status: 'error', title: 'เข้าสู่ระบบไม่สำเร็จ', message });
+        toast.error('เข้าสู่ระบบไม่สำเร็จ', { description: message, duration: 6000 });
       }
     }
   };
@@ -200,7 +261,7 @@ export default function Login() {
               type="text"
               value={employeeId}
               onChange={e => setEmployeeId(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-              disabled={isSetup || loading}
+              disabled={isSetup || isLoginDisabled}
               className="w-full h-12 bg-surface-container-lowest border border-outline-variant/60 rounded-2xl px-4 text-primary font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all disabled:opacity-50"
               placeholder="โปรดกรอกรหัสพนักงานของท่าน"
             />
@@ -214,7 +275,7 @@ export default function Login() {
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  disabled={loading}
+                  disabled={isLoginDisabled}
                   className="w-full h-12 bg-surface-container-lowest border border-outline-variant/60 rounded-2xl px-4 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                   placeholder="ชื่อของท่าน"
                 />
@@ -225,7 +286,7 @@ export default function Login() {
                   type="text"
                   value={branch}
                   onChange={e => setBranch(e.target.value)}
-                  disabled={loading}
+                  disabled={isLoginDisabled}
                   className="w-full h-12 bg-surface-container-lowest border border-outline-variant/60 rounded-2xl px-4 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                   placeholder="เช่น พิบูลสงคราม"
                 />
@@ -241,7 +302,7 @@ export default function Login() {
               type="password"
               value={pin}
               onChange={e => setPin(e.target.value)}
-              disabled={loading}
+              disabled={isLoginDisabled}
               className="w-full h-12 bg-surface-container-lowest border border-outline-variant/60 rounded-2xl px-4 text-base font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
               placeholder="••••••••"
             />
@@ -250,10 +311,10 @@ export default function Login() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={isLoginDisabled}
             className="w-full h-12 mt-6 bg-primary text-white rounded-2xl font-display font-bold shadow-md shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {loading ? (
+            {isLoginDisabled ? (
               <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
             ) : (
               <span>{isSetup ? 'บันทึกข้อมูลและเข้าสู่ระบบ' : 'เข้าสู่ระบบ'}</span>
@@ -494,6 +555,43 @@ export default function Login() {
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={authDialog.open}
+        onOpenChange={(open) => {
+          if (authDialog.status !== 'loading') setAuthDialog((current) => ({ ...current, open }));
+        }}
+      >
+        <DialogContent
+          className="w-[calc(100vw-2rem)] max-w-sm rounded-3xl border-none bg-white p-6 text-center shadow-2xl"
+          showCloseButton={authDialog.status !== 'loading'}
+        >
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+            {authDialog.status === 'loading' ? (
+              <span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span>
+            ) : authDialog.status === 'success' ? (
+              <CheckCircle2 className="h-9 w-9 text-emerald-600" aria-hidden="true" />
+            ) : (
+              <XCircle className="h-9 w-9 text-destructive" aria-hidden="true" />
+            )}
+          </div>
+          <DialogHeader className="items-center text-center">
+            <DialogTitle className="font-display text-xl font-black text-primary">{authDialog.title}</DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed text-on-surface-variant">
+              {authDialog.message}
+            </DialogDescription>
+          </DialogHeader>
+          {authDialog.status !== 'loading' && (
+            <button
+              type="button"
+              onClick={() => setAuthDialog((current) => ({ ...current, open: false }))}
+              className="mt-2 h-11 rounded-2xl bg-primary px-6 font-display text-sm font-bold text-white shadow-md shadow-primary/20 transition-all hover:opacity-90 active:scale-95"
+            >
+              ตกลง
+            </button>
+          )}
         </DialogContent>
       </Dialog>
     </div>
