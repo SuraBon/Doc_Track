@@ -76,9 +76,6 @@ export default function ConfirmReceipt({
   const [isChecking, setIsChecking] = useState(false);
   const [checkedParcel, setCheckedParcel] = useState<Parcel | null>(null);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-
-  const [customForwardFromBranch, setCustomForwardFromBranch] = useState('');
-  const [customForwardToBranch, setCustomForwardToBranch] = useState('');
   const [isDelivered, setIsDelivered] = useState(false);
 
   // Auto-fill tracking ID เมื่อถูก navigate มาจาก Dashboard
@@ -96,8 +93,6 @@ export default function ConfirmReceipt({
     setForwardSender('');
     setForwardFromBranch('');
     setForwardToBranch('');
-    setCustomForwardFromBranch('');
-    setCustomForwardToBranch('');
     setIsProxy(false);
     setProxyName('');
     setCheckedParcel(null);
@@ -137,9 +132,6 @@ export default function ConfirmReceipt({
         }
 
         setForwardFromBranch(branches.includes(currentBranch) ? currentBranch : OTHER_VALUE);
-        if (!branches.includes(currentBranch)) {
-          setCustomForwardFromBranch(currentBranch);
-        }
 
         setCheckedParcel(p);
 
@@ -200,49 +192,70 @@ export default function ConfirmReceipt({
     }
   };
 
-  const processImageFile = (file: File) => {
+  const processImageFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error('กรุณาเลือกไฟล์รูปภาพ');
       return;
     }
 
+    // ขนาดไฟล์ pre-check (20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('ไฟล์รูปภาพใหญ่เกินไป (สูงสุด 20MB)');
+      return;
+    }
+
+    const MAX_DIM = 1200;
+
+    try {
+      // ใช้ createImageBitmap (non-blocking) ถ้า browser รองรับ
+      if (typeof createImageBitmap !== 'undefined') {
+        const bitmap = await createImageBitmap(file);
+        let { width, height } = bitmap;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('canvas context unavailable');
+        ctx.drawImage(bitmap, 0, 0, width, height);
+        bitmap.close();
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        setPhotoPreview(dataUrl);
+        setPhotoUrl(dataUrl);
+        toast.success('เลือกรูปภาพสำเร็จ');
+        return;
+      }
+    } catch {
+      // fallback ด้านล่าง
+    }
+
+    // Fallback: FileReader + Image (synchronous canvas)
     const reader = new FileReader();
-    reader.onerror = () => {
-      toast.error('ไม่สามารถอ่านไฟล์ได้ กรุณาลองใหม่');
-    };
+    reader.onerror = () => toast.error('ไม่สามารถอ่านไฟล์ได้ กรุณาลองใหม่');
     reader.onload = (event) => {
       const img = new Image();
-      img.onerror = () => {
-        toast.error('ไม่สามารถโหลดรูปภาพได้ กรุณาเลือกไฟล์อื่น');
-      };
+      img.onerror = () => toast.error('ไม่สามารถโหลดรูปภาพได้ กรุณาเลือกไฟล์อื่น');
       img.onload = () => {
         try {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 1200;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width = Math.round((width * MAX_HEIGHT) / height);
-              height = MAX_HEIGHT;
-            }
+          let { width, height } = img;
+          if (width > MAX_DIM || height > MAX_DIM) {
+            const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
           }
-
+          const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            setPhotoPreview(compressedDataUrl);
-            setPhotoUrl(compressedDataUrl);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            setPhotoPreview(dataUrl);
+            setPhotoUrl(dataUrl);
             toast.success('เลือกรูปภาพสำเร็จ');
           } else {
             toast.error('ไม่สามารถประมวลผลรูปภาพได้');
@@ -258,7 +271,7 @@ export default function ConfirmReceipt({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) processImageFile(file);
+    if (file) void processImageFile(file);
   };
 
   const executeConfirm = async () => {
@@ -270,8 +283,8 @@ export default function ConfirmReceipt({
       let eventDestLocation: string | undefined;
       let eventPerson: string | undefined;
 
-      const finalForwardFromBranch = resolveSelectValue(forwardFromBranch) || customForwardFromBranch.trim();
-      const finalForwardToBranch = resolveSelectValue(forwardToBranch) || customForwardToBranch.trim();
+      const finalForwardFromBranch = resolveSelectValue(forwardFromBranch);
+      const finalForwardToBranch = resolveSelectValue(forwardToBranch);
 
       if (isForwarding && finalForwardToBranch) {
         eventType = 'FORWARD';
@@ -323,8 +336,6 @@ export default function ConfirmReceipt({
         setForwardSender('');
         setForwardFromBranch('');
         setForwardToBranch('');
-        setCustomForwardFromBranch('');
-        setCustomForwardToBranch('');
         setIsProxy(false);
         setProxyName('');
         setCheckedParcel(null);
@@ -501,9 +512,10 @@ export default function ConfirmReceipt({
                    geoStatus === 'error' ? 'ไม่สามารถดึงพิกัด GPS ได้' : 'รอการดึงพิกัด GPS'}
                 </p>
                 <p className="text-xs mt-0.5 opacity-80">
-                  {geoStatus === 'success' && position ? `${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)} (ความแม่นยำ ~${Math.round(position.accuracy)}m)` :
-                   geoError ? geoError :
-                   'ระบบต้องการพิกัด GPS ในการยืนยันพัสดุ'}
+                  {geoStatus === 'success' && position
+                    ? `${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)} (ความแม่นยำ ~${Math.round(position.accuracy)}m${position.accuracy > 100 ? ' — ต่ำ' : ''})`
+                    : geoError ? geoError
+                    : 'ระบบต้องการพิกัด GPS ในการยืนยันพัสดุ'}
                 </p>
                 {(geoStatus === 'error' || geoStatus === 'denied') && (
                   <button

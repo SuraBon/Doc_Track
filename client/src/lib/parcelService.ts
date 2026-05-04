@@ -139,6 +139,9 @@ async function callAPI<T>(
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
         throw new Error('API Key ไม่ถูกต้องหรือไม่มีสิทธิ์เข้าถึง');
+      } else if (response.status === 429) {
+        lastError = new Error('ระบบรับคำขอมากเกินไป กรุณารอสักครู่แล้วลองใหม่');
+        continue;
       } else if (response.status >= 500) {
         lastError = new Error('เซิร์ฟเวอร์ขัดข้อง กรุณาลองใหม่อีกครั้ง');
         // Server error — retry

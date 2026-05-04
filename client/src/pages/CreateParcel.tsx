@@ -290,128 +290,119 @@ export default function CreateParcel() {
 
       {/* Confirmation Modal */}
       <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <DialogContent className="w-full max-w-[92vw] sm:max-w-3xl rounded-3xl p-0 border-none shadow-2xl bg-background overflow-hidden max-h-[90vh] md:max-h-[85vh]">
-          <div className="flex flex-col h-full max-h-[90vh] md:max-h-[85vh]">
-            {/* Header (Fixed) */}
-            <div className="bg-primary p-6 text-white text-center relative shrink-0">
-            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/20">
-              <span className="material-symbols-outlined text-4xl text-secondary-container">fact_check</span>
+        <DialogContent className="w-full max-w-[92vw] sm:max-w-lg rounded-3xl p-0 border-none shadow-2xl bg-background overflow-hidden">
+          <div className="flex flex-col">
+            {/* Header */}
+            <div className="bg-primary p-6 text-white text-center rounded-t-3xl">
+              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/20">
+                <span className="material-symbols-outlined text-4xl text-secondary-container">fact_check</span>
+              </div>
+              <DialogTitle className="text-2xl font-bold font-display">ตรวจสอบข้อมูล</DialogTitle>
+              <p className="text-primary-fixed-dim text-xs mt-1 uppercase tracking-wider font-medium">กรุณายืนยันความถูกต้องก่อนบันทึก</p>
             </div>
-            <DialogTitle className="text-2xl font-bold font-display">ตรวจสอบข้อมูล</DialogTitle>
-            <p className="text-primary-fixed-dim text-xs mt-1 uppercase tracking-wider font-medium">กรุณายืนยันความถูกต้องก่อนบันทึก</p>
-          </div>
 
-          <div className="p-4 md:p-6 space-y-6 bg-surface-container-lowest overflow-y-auto">
-            {/* Ticket Style Container */}
-            <div className="bg-white rounded-3xl border border-outline-variant/40 shadow-sm overflow-hidden relative">
-              {/* Decorative top edge */}
-              <div className="h-2 w-full bg-primary" />
-              
-              <div className="p-4 sm:p-6 space-y-6">
-                {/* Routing Flow */}
-                <div className="flex flex-col sm:flex-row items-center justify-between relative gap-4 sm:gap-0">
-                  {/* Sender */}
-                  <div className="w-full sm:flex-1 flex flex-row sm:flex-col items-center sm:text-center z-10 gap-4 sm:gap-0 bg-surface-container-lowest sm:bg-transparent p-3 sm:p-0 rounded-2xl">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex shrink-0 items-center justify-center text-primary sm:mb-3">
-                      <span className="material-symbols-outlined text-xl sm:text-2xl">person_pin_circle</span>
+            <div className="p-4 md:p-6 space-y-4 bg-surface-container-lowest">
+              {/* Ticket Style Container */}
+              <div className="bg-white rounded-3xl border border-outline-variant/40 shadow-sm overflow-hidden">
+                <div className="h-2 w-full bg-primary" />
+                <div className="p-4 sm:p-6 space-y-6">
+                  {/* Routing Flow */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between relative gap-4 sm:gap-0">
+                    {/* Sender */}
+                    <div className="w-full sm:flex-1 flex flex-row sm:flex-col items-center sm:text-center z-10 gap-4 sm:gap-0 bg-surface-container-lowest sm:bg-transparent p-3 sm:p-0 rounded-2xl">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex shrink-0 items-center justify-center text-primary sm:mb-3">
+                        <span className="material-symbols-outlined text-xl sm:text-2xl">person_pin_circle</span>
+                      </div>
+                      <div className="flex-1 text-left sm:text-center">
+                        <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mb-0.5 sm:mb-1">ผู้ส่งต้นทาง</p>
+                        <p className="text-sm sm:text-base font-bold text-on-surface leading-tight mb-0.5 sm:mb-1">{formData.senderName}</p>
+                        <p className="text-xs text-on-surface-variant sm:max-w-[120px] truncate">{resolveSelectValue(formData.senderBranch)}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 text-left sm:text-center">
-                      <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mb-0.5 sm:mb-1">ผู้ส่งต้นทาง</p>
-                      <p className="text-sm sm:text-base font-bold text-on-surface leading-tight mb-0.5 sm:mb-1">{formData.senderName}</p>
-                      <p className="text-xs text-on-surface-variant sm:max-w-[120px] truncate">
-                        {resolveSelectValue(formData.senderBranch)}
-                      </p>
+
+                    {/* Connecting Line */}
+                    <div className="hidden sm:flex flex-1 flex-col items-center justify-center px-2 relative z-0">
+                      <div className="w-full border-t-2 border-dashed border-outline-variant/50 absolute top-1/2 -translate-y-1/2" />
+                      <div className="bg-white px-3 relative z-10 text-primary">
+                        <span className="material-symbols-outlined text-3xl">local_shipping</span>
+                      </div>
+                    </div>
+                    <div className="sm:hidden flex items-center justify-center w-full py-1 text-outline-variant">
+                      <span className="material-symbols-outlined">south</span>
+                    </div>
+
+                    {/* Receiver */}
+                    <div className="w-full sm:flex-1 flex flex-row sm:flex-col items-center sm:text-center z-10 gap-4 sm:gap-0 bg-surface-container-lowest sm:bg-transparent p-3 sm:p-0 rounded-2xl">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-secondary/10 rounded-full flex shrink-0 items-center justify-center text-secondary sm:mb-3">
+                        <span className="material-symbols-outlined text-xl sm:text-2xl">location_on</span>
+                      </div>
+                      <div className="flex-1 text-left sm:text-center">
+                        <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mb-0.5 sm:mb-1">ผู้รับปลายทาง</p>
+                        <p className="text-sm sm:text-base font-bold text-on-surface leading-tight mb-0.5 sm:mb-1">{formData.receiverName}</p>
+                        <p className="text-xs text-on-surface-variant sm:max-w-[120px] truncate">{resolveSelectValue(formData.receiverBranch)}</p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Connecting Line (Hidden on mobile) */}
-                  <div className="hidden sm:flex flex-1 flex-col items-center justify-center px-2 relative z-0">
-                    <div className="w-full border-t-2 border-dashed border-outline-variant/50 absolute top-1/2 -translate-y-1/2" />
-                    <div className="bg-white px-3 relative z-10 text-primary">
-                      <span className="material-symbols-outlined text-3xl">local_shipping</span>
+                  <div className="border-t border-dashed border-outline-variant/40" />
+
+                  {/* Parcel Details */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-surface-container-low/50 p-4 rounded-2xl">
+                      <div className="flex items-center gap-2 mb-2 text-primary opacity-80">
+                        <span className="material-symbols-outlined text-sm">category</span>
+                        <p className="text-[10px] font-bold uppercase tracking-widest">ประเภทพัสดุ</p>
+                      </div>
+                      <p className="text-sm font-bold text-on-surface">{resolveSelectValue(formData.docType)}</p>
+                    </div>
+                    <div className="bg-surface-container-low/50 p-4 rounded-2xl">
+                      <div className="flex items-center gap-2 mb-2 text-primary opacity-80">
+                        <span className="material-symbols-outlined text-sm">description</span>
+                        <p className="text-[10px] font-bold uppercase tracking-widest">รายละเอียด</p>
+                      </div>
+                      <p className="text-sm font-bold text-on-surface">{formData.description || '-'}</p>
                     </div>
                   </div>
 
-                  <div className="sm:hidden flex items-center justify-center w-full py-1 text-outline-variant">
-                     <span className="material-symbols-outlined">south</span>
-                  </div>
-
-                  {/* Receiver */}
-                  <div className="w-full sm:flex-1 flex flex-row sm:flex-col items-center sm:text-center z-10 gap-4 sm:gap-0 bg-surface-container-lowest sm:bg-transparent p-3 sm:p-0 rounded-2xl">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-secondary/10 rounded-full flex shrink-0 items-center justify-center text-secondary sm:mb-3">
-                      <span className="material-symbols-outlined text-xl sm:text-2xl">location_on</span>
+                  {/* Note */}
+                  {formData.note && (
+                    <div className="bg-tertiary-container/30 p-4 rounded-2xl border border-tertiary/10">
+                      <div className="flex items-center gap-2 mb-1 text-tertiary">
+                        <span className="material-symbols-outlined text-sm">edit_note</span>
+                        <p className="text-[10px] font-bold uppercase tracking-widest">หมายเหตุเพิ่มเติม</p>
+                      </div>
+                      <p className="text-sm text-on-surface italic">{formData.note}</p>
                     </div>
-                    <div className="flex-1 text-left sm:text-center">
-                      <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mb-0.5 sm:mb-1">ผู้รับปลายทาง</p>
-                      <p className="text-sm sm:text-base font-bold text-on-surface leading-tight mb-0.5 sm:mb-1">{formData.receiverName}</p>
-                      <p className="text-xs text-on-surface-variant sm:max-w-[120px] truncate">
-                        {resolveSelectValue(formData.receiverBranch)}
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
-
-                <div className="border-t border-dashed border-outline-variant/40" />
-
-                {/* Parcel Details */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-surface-container-low/50 p-4 rounded-2xl">
-                    <div className="flex items-center gap-2 mb-2 text-primary opacity-80">
-                      <span className="material-symbols-outlined text-sm">category</span>
-                      <p className="text-[10px] font-bold uppercase tracking-widest">ประเภทพัสดุ</p>
-                    </div>
-                    <p className="text-sm font-bold text-on-surface">
-                      {resolveSelectValue(formData.docType)}
-                    </p>
-                  </div>
-                  <div className="bg-surface-container-low/50 p-4 rounded-2xl">
-                    <div className="flex items-center gap-2 mb-2 text-primary opacity-80">
-                      <span className="material-symbols-outlined text-sm">description</span>
-                      <p className="text-[10px] font-bold uppercase tracking-widest">รายละเอียด</p>
-                    </div>
-                    <p className="text-sm font-bold text-on-surface">{formData.description || '-'}</p>
-                  </div>
-                </div>
-
-                {/* Note */}
-                {formData.note && (
-                  <div className="bg-tertiary-container/30 p-4 rounded-2xl border border-tertiary/10">
-                    <div className="flex items-center gap-2 mb-1 text-tertiary">
-                      <span className="material-symbols-outlined text-sm">edit_note</span>
-                      <p className="text-[10px] font-bold uppercase tracking-widest">หมายเหตุเพิ่มเติม</p>
-                    </div>
-                    <p className="text-sm text-on-surface italic">{formData.note}</p>
-                  </div>
-                )}
               </div>
             </div>
 
+            {/* Footer */}
+            <div className="p-4 md:p-6 bg-surface-container-lowest border-t border-outline-variant/20">
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setIsConfirmOpen(false)}
+                  className="flex-1 h-14 rounded-2xl font-display font-bold border-2 border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors text-base"
+                >
+                  แก้ไข
+                </button>
+                <button
+                  onClick={handleConfirmSubmit}
+                  disabled={isLoading}
+                  className="flex-[2] flex items-center justify-center gap-2 h-14 bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all text-base disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                  ) : (
+                    <>
+                      ยืนยันสร้างรายการ
+                      <span className="material-symbols-outlined text-xl">verified</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          {/* Footer (Fixed) */}
-          <div className="p-4 md:p-6 bg-surface-container-lowest border-t border-outline-variant/20 shrink-0">
-            <div className="flex gap-4">
-              <button
-                onClick={() => setIsConfirmOpen(false)}
-                className="flex-1 h-14 rounded-2xl font-display font-bold border-2 border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors text-base"
-              >
-                แก้ไข
-              </button>
-              <button
-                onClick={handleConfirmSubmit}
-                disabled={isLoading}
-                className="flex-[2] flex items-center justify-center gap-2 h-14 bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all text-base disabled:opacity-50"
-              >
-                {isLoading ? (
-                  <span className="material-symbols-outlined animate-spin">progress_activity</span>
-                ) : (
-                  <>
-                    ยืนยันสร้างรายการ
-                    <span className="material-symbols-outlined text-xl">verified</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
           </div>
         </DialogContent>
       </Dialog>

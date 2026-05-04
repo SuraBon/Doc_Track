@@ -126,21 +126,23 @@ function App() {
   const renderCurrentPage = () => {
     switch (visiblePage) {
       case "dashboard":
-        return <Dashboard isConfigured={isConfiguredState} onConfirmParcel={navigateToConfirm} />;
+        return <ErrorBoundary><Dashboard isConfigured={isConfiguredState} onConfirmParcel={navigateToConfirm} /></ErrorBoundary>;
       case "create":
-        return <CreateParcel />;
+        return <ErrorBoundary><CreateParcel /></ErrorBoundary>;
       case "confirm":
         return (
-          <ConfirmReceipt
-            initialTrackingId={confirmTrackingId}
-            onInitialTrackingIdConsumed={() => setConfirmTrackingId(null)}
-          />
+          <ErrorBoundary>
+            <ConfirmReceipt
+              initialTrackingId={confirmTrackingId}
+              onInitialTrackingIdConsumed={() => setConfirmTrackingId(null)}
+            />
+          </ErrorBoundary>
         );
       case "users":
-        return <UserManagement />;
+        return <ErrorBoundary><UserManagement /></ErrorBoundary>;
       case "track":
       default:
-        return <Track />;
+        return <ErrorBoundary><Track /></ErrorBoundary>;
     }
   };
 

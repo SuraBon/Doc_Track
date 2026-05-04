@@ -68,7 +68,6 @@ const TableSkeleton = () => (
 export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardProps) {
   const { user } = useAuth();
   const { parcels, summary, loading, loadParcels, hasMore, loadMoreParcels, removeParcelLocally } = useParcelStore();
-  const [filteredParcels, setFilteredParcels] = useState<Parcel[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [statusFilter, setStatusFilter] = useState('ทั้งหมด');
@@ -132,7 +131,7 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
     return () => clearInterval(timer);
   }, [isConfigured, fetchData]);
 
-  useEffect(() => {
+  const filteredParcels = useMemo(() => {
     let f = parcels;
     if (statusFilter !== 'ทั้งหมด') f = f.filter(p => p['สถานะ'] === statusFilter);
     if (debouncedSearch) {
@@ -143,15 +142,25 @@ export default function Dashboard({ isConfigured, onConfirmParcel }: DashboardPr
         p['ผู้รับ'].toLowerCase().includes(q)
       );
     }
-    setFilteredParcels(f);
-    setCurrentPage(1); // รีเซ็ตหน้าเมื่อ filter เปลี่ยน
+    return f;
   }, [parcels, statusFilter, debouncedSearch]);
 
   // Pagination calculations
-  const totalPages = Math.max(1, Math.ceil(filteredParcels.length / pageSize));
-  const paginatedParcels = filteredParcels.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const startIndex = filteredParcels.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endIndex = Math.min(currentPage * pageSize, filteredParcels.length);
+  const { totalPages, paginatedParcels, startIndex, endIndex } = useMemo(() => {
+    const total = Math.max(1, Math.ceil(filteredParcels.length / pageSize));
+    const paginated = filteredParcels.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const start = filteredParcels.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, filteredParcels.length);
+    return { totalPages: total, paginatedParcels: paginated, startIndex: start, endIndex: end };
+  }, [filteredParcels, currentPage, pageSize]);
+
+  // Reset page when filter changes
+  useEffect(() => { setCurrentPage(1); }, [statusFilter, debouncedSearch]);
+
+  // Clamp currentPage ไม่ให้เกิน totalPages เมื่อข้อมูลเปลี่ยน
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
 
   const handleRefresh = async () => {
     if (loading) return; // ป้องกันกดซ้ำระหว่าง loading
