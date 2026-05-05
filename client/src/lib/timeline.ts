@@ -12,6 +12,10 @@ export function parseParcelTimeline(parcel: Parcel): TimelineEvent[] {
   // Extract GPS coordinates from the parcel record
   const parcelLat = typeof parcel['Latitude'] === 'number' ? parcel['Latitude'] : undefined;
   const parcelLng = typeof parcel['Longitude'] === 'number' ? parcel['Longitude'] : undefined;
+  const originLat = typeof parcel['OriginLatitude'] === 'number' ? parcel['OriginLatitude'] : undefined;
+  const originLng = typeof parcel['OriginLongitude'] === 'number' ? parcel['OriginLongitude'] : undefined;
+  const creationLat = originLat ?? parcelLat;
+  const creationLng = originLng ?? parcelLng;
 
   // ── A. Modern Structured Events ────────────────────────────────────────────────
   if (parcel.events && parcel.events.length > 0) {
@@ -101,6 +105,8 @@ export function parseParcelTimeline(parcel: Parcel): TimelineEvent[] {
     timestamp: parcel['วันที่สร้าง'],
     location: parcel['สาขาผู้ส่ง'],
     destLocation: parcel['สาขาผู้รับ'],
+    latitude: creationLat,
+    longitude: creationLng,
   });
 
   // ── 2. Forward events

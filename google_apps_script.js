@@ -394,6 +394,43 @@ function validatePassword(value) {
   return SAFE_PASSWORD_REGEX.test(password) && !/^[=+\-@\t\r]/.test(password);
 }
 
+function makePasswordSalt() {
+  return Utilities.getUuid().replace(/-/g, "") + String(Date.now());
+}
+
+function hashPassword(password, salt) {
+  const digest = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    salt + "|" + sanitizePassword(password),
+    Utilities.Charset.UTF_8
+  );
+  return Utilities.base64Encode(digest);
+}
+
+function encodePassword(password) {
+  const salt = makePasswordSalt();
+  return "sha256$" + salt + "$" + hashPassword(password, salt);
+}
+
+function verifyPasswordRecord(storedValue, password) {
+  const stored = String(storedValue || "").trim();
+  const cleanPassword = sanitizePassword(password);
+  if (!stored) return { ok: false, needsMigration: false };
+
+  const parts = stored.split("$");
+  if (parts.length === 3 && parts[0] === "sha256") {
+    return {
+      ok: hashPassword(cleanPassword, parts[1]) === parts[2],
+      needsMigration: false
+    };
+  }
+
+  return {
+    ok: stored === cleanPassword,
+    needsMigration: stored === cleanPassword
+  };
+}
+
 // ── Input sanitization ───────────────────────────────────────────────────────
 
 /**
@@ -428,6 +465,23 @@ function sanitizeCoordinate(value, min, max) {
   const num = Number(value);
   if (!isFinite(num) || num < min || num > max) return "";
   return Math.round(num * 10000000) / 10000000;
+}
+
+function redactParcelForGuest(parcel) {
+  const redacted = {};
+  [
+    "TrackingID",
+    "วันที่สร้าง",
+    "ผู้ส่ง",
+    "สาขาผู้ส่ง",
+    "ผู้รับ",
+    "สาขาผู้รับ",
+    "ประเภทเอกสาร",
+    "สถานะ"
+  ].forEach(function(key) {
+    if (Object.prototype.hasOwnProperty.call(parcel, key)) redacted[key] = parcel[key];
+  });
+  return redacted;
 }
 
 function validateImagePayload(value) {
@@ -899,6 +953,7 @@ function handleGetParcel(payload) {
   if (!validateTrackingID(payload.trackingID)) {
     return createJsonResponse({ success: false, error: "รูปแบบหมายเลขติดตามไม่ถูกต้อง" });
   }
+  const isGuest = normalizeRole(payload.role) === "GUEST";
   const storage = getParcelStorageByTrackingId(payload.trackingID);
   if (!storage) {
     return createJsonResponse({ success: false, error: "ไม่พบข้อมูล" });
@@ -917,6 +972,10 @@ function handleGetParcel(payload) {
 
       parcel["วันที่สร้าง"] = formatSheetDateValue(parcel["วันที่สร้าง"]);
 
+      if (isGuest) {
+        return createJsonResponse({ success: true, parcel: redactParcelForGuest(parcel) });
+      }
+
       const eventsMap = getParcelEventsMap();
       parcel.events = eventsMap[payload.trackingID] || [];
 
@@ -928,10 +987,12 @@ function handleGetParcel(payload) {
 }
 
 function handleExportSummary(payload) {
-  if (!hasAnyRole(payload, ['ADMIN', 'MESSENGER'])) {
+  if (!hasAnyRole(payload, ['ADMIN', 'MESSENGER', 'USER'])) {
     return createJsonResponse({ success: false, error: "ไม่มีสิทธิ์เข้าถึง" });
   }
   let total = 0, pending = 0, transit = 0, delivered = 0;
+  const isUserScoped = normalizeRole(payload.role) === "USER";
+  const employeeId = String(payload.employeeId || "").trim();
 
   // Build events map once for derived status calculation
   const eventsMap = getParcelEventsMap();
@@ -940,6 +1001,9 @@ function handleExportSummary(payload) {
     const data = entry.sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
+      if (isUserScoped && String(row[13] || "").trim() !== employeeId) {
+        continue;
+      }
       let status = String(row[9] || "");
       const trackingID = String(row[0] || "");
       total++;
@@ -1174,6 +1238,12 @@ function handleSearchParcels(payload) {
   }
   cache.put(rateLimitKey, String(rateCount + 1), 60);
 
+  const role = normalizeRole(payload.role);
+  const isGuest = role === "GUEST";
+  if (isGuest && !validateTrackingID(query) && query.length < 2) {
+    return createJsonResponse({ success: true, parcels: [] });
+  }
+
   const queryLower = query.toLowerCase();
   const parcels = [];
 
@@ -1186,11 +1256,13 @@ function handleSearchParcels(payload) {
 
     for (let i = data.length - 1; i >= 1; i--) {
       const row = data[i];
+      const tracking = String(row[0] || "").toLowerCase();
       const sender = String(row[2] || "").toLowerCase();
       const receiver = String(row[4] || "").toLowerCase();
-      const tracking = String(row[0] || "").toLowerCase();
 
-      if (tracking.indexOf(queryLower) === -1 && sender.indexOf(queryLower) === -1 && receiver.indexOf(queryLower) === -1) {
+      if (isGuest) {
+        if (tracking !== queryLower && receiver.indexOf(queryLower) === -1) continue;
+      } else if (tracking.indexOf(queryLower) === -1 && sender.indexOf(queryLower) === -1 && receiver.indexOf(queryLower) === -1) {
         continue;
       }
 
@@ -1200,16 +1272,23 @@ function handleSearchParcels(payload) {
       }
 
       parcel["วันที่สร้าง"] = formatSheetDateValue(parcel["วันที่สร้าง"]);
+      if (isGuest) {
+        parcels.push(redactParcelForGuest(parcel));
+        if (parcels.length >= 50) break;
+        continue;
+      }
 
       parcels.push(parcel);
       if (parcels.length >= 50) break;
     }
   }
 
-  // Attach events
-  const eventsMap = getParcelEventsMap();
-  for (let p of parcels) {
-    p.events = eventsMap[p.TrackingID] || [];
+  if (!isGuest) {
+    // Attach events only for authenticated users. Public search should not expose proof images or GPS trails.
+    const eventsMap = getParcelEventsMap();
+    for (let p of parcels) {
+      p.events = eventsMap[p.TrackingID] || [];
+    }
   }
 
   return createJsonResponse({ success: true, parcels: parcels });
@@ -1350,7 +1429,8 @@ function handleLogin(payload) {
         return createJsonResponse({ success: true, needsSetup: true, role, name, branch });
       }
 
-      if (storedPin !== pin) {
+      const passwordCheck = verifyPasswordRecord(storedPin, pin);
+      if (!passwordCheck.ok) {
         recordFailedLogin(employeeId);
         const remaining = rateLimit.remaining - 1;
         const msg = remaining > 0
@@ -1359,6 +1439,9 @@ function handleLogin(payload) {
         return createJsonResponse({ success: false, error: msg });
       }
 
+      if (passwordCheck.needsMigration) {
+        sheet.getRange(i + 1, 5).setValue(encodePassword(pin));
+      }
       clearLoginAttempts(employeeId);
       const token = generateToken(employeeId, role, getApiKey());
       return createJsonResponse({ success: true, user: { employeeId, name, branch, role, token } });
@@ -1392,7 +1475,7 @@ function handleSetupPin(payload) {
       }
       if (name) sheet.getRange(i + 1, 2).setValue(name);
       if (branch) sheet.getRange(i + 1, 3).setValue(branch);
-      sheet.getRange(i + 1, 5).setValue(pin);
+      sheet.getRange(i + 1, 5).setValue(encodePassword(pin));
       
       const role = normalizeRole(data[i][3] || "USER");
       const finalName = name || String(data[i][1]).trim();
@@ -1403,10 +1486,12 @@ function handleSetupPin(payload) {
     }
   }
 
-  // User not found — auto-create new user and set PIN in one step
-  sheet.appendRow([employeeId, name || "Unknown", branch || "Unknown", "USER", pin, formatThaiDateForSheet(new Date())]);
+  // User not found — allow self-registration as a USER to reduce admin setup work.
+  const finalName = name || "Unknown";
+  const finalBranch = branch || "Unknown";
+  sheet.appendRow([employeeId, finalName, finalBranch, "USER", encodePassword(pin), formatThaiDateForSheet(new Date())]);
   const token = generateToken(employeeId, "USER", getApiKey());
-  return createJsonResponse({ success: true, user: { employeeId, name: name || "Unknown", branch: branch || "Unknown", role: "USER", token } });
+  return createJsonResponse({ success: true, user: { employeeId, name: finalName, branch: finalBranch, role: "USER", token } });
 }
 
 function handleGetUsers(payload) {
@@ -1570,7 +1655,11 @@ function handleUpdateProfile(payload) {
     // If changing password, must verify current password first
     if (newPassword) {
       if (!currentPassword) return createJsonResponse({ success: false, error: "กรุณากรอกรหัสผ่านปัจจุบันเพื่อเปลี่ยนรหัสผ่าน" });
-      if (currentPin !== currentPassword) return createJsonResponse({ success: false, error: "รหัสผ่านปัจจุบันไม่ถูกต้อง" });
+      const passwordCheck = verifyPasswordRecord(currentPin, currentPassword);
+      if (!passwordCheck.ok) return createJsonResponse({ success: false, error: "รหัสผ่านปัจจุบันไม่ถูกต้อง" });
+      if (passwordCheck.needsMigration) {
+        sheet.getRange(rowIndex, 5).setValue(encodePassword(currentPassword));
+      }
     }
 
     const changedFields = [];
@@ -1583,7 +1672,7 @@ function handleUpdateProfile(payload) {
       changedFields.push("branch=" + newBranch);
     }
     if (newPassword) {
-      sheet.getRange(rowIndex, 5).setValue(newPassword);
+      sheet.getRange(rowIndex, 5).setValue(encodePassword(newPassword));
       changedFields.push("password=***");
     }
 

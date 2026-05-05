@@ -545,16 +545,16 @@ export default function ConfirmReceipt({
               </div>
               <div className="flex-1">
                 <p className="font-bold text-sm">
-                  {geoStatus === 'success' ? 'ดึงพิกัด GPS สำเร็จ' :
-                   geoStatus === 'loading' ? 'กำลังดึงพิกัด GPS...' :
-                   geoStatus === 'denied' ? 'ไม่ได้รับอนุญาตให้เข้าถึง GPS' :
-                   geoStatus === 'error' ? 'ไม่สามารถดึงพิกัด GPS ได้' : 'รอการดึงพิกัด GPS'}
+                  {geoStatus === 'success' ? 'พร้อมบันทึกพิกัด GPS' :
+                   geoStatus === 'loading' ? 'กำลังตรวจจับพิกัด GPS...' :
+                   geoStatus === 'denied' ? 'ยังไม่ได้อนุญาตให้ใช้ตำแหน่ง' :
+                   geoStatus === 'error' ? 'ยังดึงพิกัด GPS ไม่สำเร็จ' : 'รอเริ่มตรวจจับพิกัด'}
                 </p>
                 <p className="text-xs mt-0.5 opacity-80">
                   {geoStatus === 'success' && position
                     ? `${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)} (ความแม่นยำ ~${Math.round(position.accuracy)}m${position.accuracy > 100 ? ' — ต่ำ' : ''})`
                     : geoError ? geoError
-                    : 'ระบบต้องการพิกัด GPS ในการยืนยันพัสดุ'}
+                    : 'ต้องมีพิกัด GPS ก่อนยืนยันรายการ'}
                 </p>
                 {(geoStatus === 'error' || geoStatus === 'denied') && (
                   <button
@@ -585,11 +585,13 @@ export default function ConfirmReceipt({
               <button
                 onClick={() => {
                   if (geoStatus !== 'success') {
-                    toast.warning('ไม่มีพิกัด GPS — ข้อมูลตำแหน่งจะไม่ถูกบันทึก');
+                    toast.warning('กรุณารอให้ GPS พร้อม หรือลองดึงตำแหน่งใหม่ก่อนดำเนินการต่อ');
+                    if (geoStatus !== 'loading') requestLocation();
+                    return;
                   }
                   setCurrentStep(3);
                 }}
-                disabled={!photoPreview}
+                disabled={!photoPreview || geoStatus === 'loading'}
                 className="flex items-center justify-center gap-2 h-14 flex-[2] bg-primary text-white rounded-2xl font-display font-bold shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
               >
                 ขั้นตอนถัดไป
@@ -744,7 +746,7 @@ export default function ConfirmReceipt({
                   || (isProxy && !proxyName.trim())}
                 className="flex items-center justify-center gap-2 h-14 flex-[2] bg-green-600 text-white rounded-2xl font-display font-bold shadow-lg shadow-green-200 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
               >
-                ยืนยันทำรายการ
+                ยืนยันรายการ
                 <span className="material-symbols-outlined">verified</span>
               </button>
             </div>

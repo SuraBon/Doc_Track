@@ -186,7 +186,7 @@ export default function Login() {
       const res = await setupPin(normalizeEmployeeId(regId), regPassword.trim(), regName.trim(), resolveSelectValue(regBranch));
       if (res.success) {
         toast.success(`สมัครสมาชิกสำเร็จ! ยินดีต้อนรับ ${regName.trim()}`, {
-          description: 'กรุณาเข้าสู่ระบบด้วยรหัสที่สมัครไว้',
+          description: 'กรุณาเข้าสู่ระบบด้วยรหัสผ่านที่สมัครไว้',
           duration: 5000,
         });
         setIsRegisterOpen(false);
@@ -470,7 +470,7 @@ export default function Login() {
               <div>
                 <DialogTitle className="font-display text-xl font-black text-primary">ติดตามพัสดุ</DialogTitle>
                 <DialogDescription className="mt-1 text-xs text-on-surface-variant">
-                  ค้นหาด้วยหมายเลขติดตามหรือชื่อผู้รับโดยไม่ต้องเข้าสู่ระบบ
+                  ค้นหาด้วยหมายเลขติดตามหรือชื่อผู้รับ ระบบจะแสดงเฉพาะข้อมูลสรุป
                 </DialogDescription>
               </div>
             </div>
@@ -570,8 +570,8 @@ export default function Login() {
               ) : (
                 <div className="rounded-3xl border border-dashed border-outline-variant/40 bg-surface-container-lowest px-6 py-12 text-center">
                   <PackageSearch className="mx-auto h-10 w-10 text-on-surface-variant/30" aria-hidden="true" />
-                  <p className="mt-3 font-display text-sm font-bold text-primary">กรอกข้อมูลเพื่อเริ่มติดตามพัสดุ</p>
-                  <p className="mt-1 text-xs text-on-surface-variant/60">ผลการค้นหาจะแสดงใน popup นี้</p>
+                  <p className="mt-3 font-display text-sm font-bold text-primary">กรอกหมายเลขติดตามหรือชื่อผู้รับเพื่อเริ่มค้นหา</p>
+                  <p className="mt-1 text-xs text-on-surface-variant/60">ผู้ที่ยังไม่ได้เข้าสู่ระบบจะเห็นเฉพาะข้อมูลสรุปของพัสดุ</p>
                 </div>
               )}
             </div>

@@ -90,8 +90,8 @@ export default function ParcelTimelineModal({
                 ) : (
                   <div className="rounded-2xl border border-outline-variant/30 shadow-sm h-[220px] sm:h-[260px] bg-surface-container-lowest flex flex-col items-center justify-center p-6 text-center">
                     <span className="material-symbols-outlined text-4xl text-on-surface-variant/30 mb-3">map_off</span>
-                    <p className="text-sm font-bold text-on-surface-variant">ไม่สามารถแสดงแผนที่ได้</p>
-                    <p className="text-xs text-on-surface-variant/60 mt-1">สาขาที่ระบุไม่มีพิกัดในระบบ</p>
+                    <p className="text-sm font-bold text-on-surface-variant">ยังไม่มีพิกัด GPS</p>
+                    <p className="text-xs text-on-surface-variant/60 mt-1">แผนที่จะแสดงเมื่อมีการบันทึกตำแหน่งจากการสร้างหรือยืนยันรับพัสดุ</p>
                   </div>
                 )}
                 <div className="bg-white rounded-2xl p-4 sm:p-5 border border-outline-variant/30 shadow-sm">

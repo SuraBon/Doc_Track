@@ -79,9 +79,6 @@ function TrackingMap({ events }: TrackingMapProps) {
     setIsMapReady(true);
   }, []);
 
-  // Stable dep key — only changes when the actual path changes
-  const pathKey = pathEntries.map(e => `${e.lat},${e.lng}`).join('|');
-
   useEffect(() => {
     if (!mapRef.current || !isMapReady) return;
     const map = mapRef.current;
@@ -212,8 +209,7 @@ function TrackingMap({ events }: TrackingMapProps) {
       polylineRef.current?.remove();
       polylineRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasRouteData, isMapReady, pathKey]);
+  }, [hasRouteData, isMapReady, pathEntries]);
 
   useEffect(() => {
     if (!mapRef.current) return;
