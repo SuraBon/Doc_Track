@@ -139,6 +139,38 @@ const ParcelMilestone = ({ status }: { status: Parcel['สถานะ'] }) => {
   );
 };
 
+const MessengerRouteSummary = ({ parcel, compact = false }: { parcel: Parcel; compact?: boolean }) => (
+  <div className={`rounded-xl border border-primary/10 bg-primary/[0.03] ${compact ? 'p-2.5' : 'p-3'}`}>
+    <div className={`grid items-stretch gap-2 ${compact ? 'grid-cols-[1fr_auto_1fr]' : 'grid-cols-[1fr_auto_1fr]'}`}>
+      <div className="min-w-0 rounded-lg bg-white px-2.5 py-2 shadow-sm ring-1 ring-outline-variant/10">
+        <div className="mb-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-on-surface-variant/50">
+          <span className="material-symbols-outlined text-[13px]">package_2</span>
+          รับจาก
+        </div>
+        <p className="truncate text-sm font-black leading-tight text-primary">{parcel['สาขาผู้ส่ง'] || '-'}</p>
+        {!compact && <p className="mt-0.5 truncate text-[11px] font-semibold text-on-surface-variant/60">{parcel['ผู้ส่ง'] || '-'}</p>}
+      </div>
+      <div className="grid w-8 place-items-center text-primary">
+        <span className="material-symbols-outlined text-xl">arrow_forward</span>
+      </div>
+      <div className="min-w-0 rounded-lg bg-white px-2.5 py-2 shadow-sm ring-1 ring-outline-variant/10">
+        <div className="mb-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-on-surface-variant/50">
+          <span className="material-symbols-outlined text-[13px]">flag</span>
+          ส่งที่
+        </div>
+        <p className="truncate text-sm font-black leading-tight text-primary">{parcel['สาขาผู้รับ'] || '-'}</p>
+        {!compact && <p className="mt-0.5 truncate text-[11px] font-semibold text-on-surface-variant/60">ให้ {parcel['ผู้รับ'] || '-'}</p>}
+      </div>
+    </div>
+    {compact && (
+      <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-black text-primary shadow-sm ring-1 ring-outline-variant/10">
+        <span className="material-symbols-outlined text-base">person_pin</span>
+        <span className="min-w-0 truncate">ให้ {parcel['ผู้รับ'] || '-'}</span>
+      </div>
+    )}
+  </div>
+);
+
 const MobileParcelCard = ({
   parcel,
   onOpen,
@@ -152,30 +184,27 @@ const MobileParcelCard = ({
   onConfirm: () => void;
   isMessenger?: boolean;
 }) => (
-  <div className="w-full rounded-xl border border-outline-variant/20 bg-white p-3 text-left shadow-sm transition-all">
+  <div className={`w-full rounded-xl border bg-white p-3 text-left shadow-sm transition-all ${isMessenger ? 'border-primary/15' : 'border-outline-variant/20'}`}>
     <div className="w-full text-left">
       <div className="flex items-start justify-between gap-2.5">
         <div className="min-w-0 flex-1">
           <code className="inline-block max-w-full break-all rounded-md bg-primary/6 px-2 py-0.5 font-mono text-[11px] font-black leading-tight text-primary">
             {parcel.TrackingID}
           </code>
-          {isMessenger ? (
-            <div className="mt-2 flex min-w-0 items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-on-surface-variant shrink-0">ต้องส่งให้</span>
-              <span className="truncate text-xs font-black text-primary">{parcel['ผู้รับ']}</span>
-            </div>
-          ) : (
+          {!isMessenger && (
             <div className="mt-2 flex min-w-0 items-center gap-1.5">
               <span className="truncate text-xs font-black text-primary">{parcel['ผู้ส่ง']}</span>
               <span className="material-symbols-outlined shrink-0 text-sm text-outline-variant">arrow_forward</span>
               <span className="truncate text-xs font-black text-primary">{parcel['ผู้รับ']}</span>
             </div>
           )}
-          <div className="mt-1 flex min-w-0 items-center gap-1 text-[11px] font-semibold text-on-surface-variant">
-            <span className="truncate">{parcel['สาขาผู้ส่ง']}</span>
-            <span className="shrink-0">→</span>
-            <span className="truncate">{parcel['สาขาผู้รับ']}</span>
-          </div>
+          {!isMessenger && (
+            <div className="mt-1 flex min-w-0 items-center gap-1 text-[11px] font-semibold text-on-surface-variant">
+              <span className="truncate">{parcel['สาขาผู้ส่ง']}</span>
+              <span className="shrink-0">→</span>
+              <span className="truncate">{parcel['สาขาผู้รับ']}</span>
+            </div>
+          )}
           <div className="mt-1 text-[11px] font-semibold text-on-surface-variant">
             <span>{formatThaiDateTime(parcel['วันที่สร้าง'])}</span>
           </div>
@@ -192,6 +221,7 @@ const MobileParcelCard = ({
           </button>
         </div>
       </div>
+      {isMessenger && <div className="mt-3"><MessengerRouteSummary parcel={parcel} compact /></div>}
       <ParcelMilestone status={parcel['สถานะ']} />
     </div>
     {canConfirm && (
@@ -431,6 +461,33 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {isMessengerDashboard && (
+        <div className="rounded-2xl border border-primary/15 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                  <span className="material-symbols-outlined text-xl">local_shipping</span>
+                </span>
+                <div className="min-w-0">
+                  <h2 className="font-display text-lg font-black leading-tight text-primary">งานที่ต้องไปส่งวันนี้</h2>
+                  <p className="text-xs font-semibold leading-snug text-on-surface-variant/65">ดูเส้นทาง รับจากไหน → ส่งที่ไหน → ให้ใคร แล้วกดบันทึกผลได้ทันที</p>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-black text-white shadow-sm transition-all hover:bg-primary/95 active:scale-[0.98] disabled:opacity-50"
+            >
+              <span className={`material-symbols-outlined text-lg ${loading ? 'animate-spin' : ''}`}>refresh</span>
+              อัปเดตงาน
+            </button>
+          </div>
+        </div>
+      )}
+
       {isUserDashboard && (
         <div className="grid grid-cols-2 gap-2 sm:max-w-md">
           <button
@@ -595,7 +652,7 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
               <thead>
                 <tr className="text-[10px] uppercase tracking-widest font-black text-on-surface-variant/50 border-b border-outline-variant/10">
                   <th className="px-5 py-2.5 bg-surface-container-lowest/60 text-center">หมายเลขติดตาม</th>
-                  <th className="px-4 py-2.5 bg-surface-container-lowest/60 text-center">จาก → ส่งให้/ไปที่</th>
+                  <th className="px-4 py-2.5 bg-surface-container-lowest/60 text-center">{isMessengerDashboard ? 'เส้นทางและผู้รับ' : 'จาก → ส่งให้/ไปที่'}</th>
                   <th className="px-4 py-2.5 bg-surface-container-lowest/60 text-center">วันที่</th>
                   <th className="px-4 py-2.5 bg-surface-container-lowest/60 text-center">สถานะ</th>
                   <th className="px-4 py-2.5 bg-surface-container-lowest/60 text-center">การดำเนินการ</th>
@@ -622,18 +679,24 @@ export default function Dashboard({ isConfigured }: DashboardProps) {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="flex items-center gap-1.5 text-sm">
-                          <span className="font-semibold text-primary truncate max-w-[100px]">{parcel['ผู้ส่ง']}</span>
-                          <span className="material-symbols-outlined text-outline-variant text-sm shrink-0">arrow_forward</span>
-                          <span className="text-on-surface-variant font-medium truncate max-w-[100px]">{parcel['ผู้รับ']}</span>
+                      {isMessengerDashboard ? (
+                        <div className="mx-auto max-w-md text-left">
+                          <MessengerRouteSummary parcel={parcel} />
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-on-surface-variant/40">{parcel['สาขาผู้ส่ง']}</span>
-                          <span className="text-[10px] text-on-surface-variant/30">→</span>
-                          <span className="text-[10px] text-on-surface-variant/40">{parcel['สาขาผู้รับ']}</span>
+                      ) : (
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <span className="font-semibold text-primary truncate max-w-[100px]">{parcel['ผู้ส่ง']}</span>
+                            <span className="material-symbols-outlined text-outline-variant text-sm shrink-0">arrow_forward</span>
+                            <span className="text-on-surface-variant font-medium truncate max-w-[100px]">{parcel['ผู้รับ']}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-on-surface-variant/40">{parcel['สาขาผู้ส่ง']}</span>
+                            <span className="text-[10px] text-on-surface-variant/30">→</span>
+                            <span className="text-[10px] text-on-surface-variant/40">{parcel['สาขาผู้รับ']}</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-on-surface-variant text-center">
                       <span className="text-sm font-medium">{formatThaiDateTime(parcel['วันที่สร้าง'])}</span>

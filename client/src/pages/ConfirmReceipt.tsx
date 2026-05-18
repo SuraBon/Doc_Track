@@ -46,6 +46,43 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
   );
 }
 
+function ParcelJobSummary({ parcel }: { parcel: Parcel }) {
+  return (
+    <div className="rounded-2xl border border-primary/15 bg-primary/[0.03] p-3 text-left">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-wider text-on-surface-variant/55">งานส่งนี้</p>
+          <p className="truncate font-display text-base font-black leading-tight text-primary">ส่งให้ {parcel['ผู้รับ'] || '-'}</p>
+        </div>
+        <code className="shrink-0 rounded-lg bg-white px-2 py-1 font-mono text-[11px] font-black text-primary shadow-sm ring-1 ring-outline-variant/10">
+          {parcel.TrackingID}
+        </code>
+      </div>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
+        <div className="min-w-0 rounded-xl bg-white p-2.5 shadow-sm ring-1 ring-outline-variant/10">
+          <div className="mb-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-on-surface-variant/50">
+            <span className="material-symbols-outlined text-[13px]">package_2</span>
+            รับจาก
+          </div>
+          <p className="truncate text-sm font-black leading-tight text-primary">{parcel['สาขาผู้ส่ง'] || '-'}</p>
+          <p className="mt-0.5 truncate text-[11px] font-semibold text-on-surface-variant/60">{parcel['ผู้ส่ง'] || '-'}</p>
+        </div>
+        <div className="grid w-8 place-items-center text-primary">
+          <span className="material-symbols-outlined text-xl">arrow_forward</span>
+        </div>
+        <div className="min-w-0 rounded-xl bg-white p-2.5 shadow-sm ring-1 ring-outline-variant/10">
+          <div className="mb-1 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-on-surface-variant/50">
+            <span className="material-symbols-outlined text-[13px]">flag</span>
+            ส่งที่
+          </div>
+          <p className="truncate text-sm font-black leading-tight text-primary">{parcel['สาขาผู้รับ'] || '-'}</p>
+          <p className="mt-0.5 truncate text-[11px] font-semibold text-on-surface-variant/60">ให้ {parcel['ผู้รับ'] || '-'}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ConfirmReceipt({
   initialTrackingId,
   onInitialTrackingIdConsumed,
@@ -538,6 +575,8 @@ export default function ConfirmReceipt({
             <p className="mt-0.5 text-xs font-semibold text-on-surface-variant/60">ถ่ายรูปพัสดุหรือหลักฐานการจัดส่ง</p>
           </div>
           <div className="space-y-4 p-4 sm:p-5">
+            {checkedParcel && <ParcelJobSummary parcel={checkedParcel} />}
+
             {!photoPreview ? (
               <div
                 onClick={() => fileInputRef.current?.click()}
@@ -654,6 +693,8 @@ export default function ConfirmReceipt({
             <p className="mt-0.5 text-xs font-semibold text-on-surface-variant/60">ดูว่าพัสดุมาจากไหน ต้องไปส่งที่ไหน และส่งให้ใคร</p>
           </div>
           <div className="space-y-4 p-4 sm:p-5">
+            {checkedParcel && <ParcelJobSummary parcel={checkedParcel} />}
+
             <div className="grid grid-cols-1 gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-3 text-sm sm:grid-cols-2">
               <div className="flex items-center gap-2.5 text-on-surface-variant">
                 <span className="material-symbols-outlined text-lg text-primary">barcode_scanner</span>
