@@ -12,7 +12,7 @@ import { useParcelStore } from '@/hooks/useParcelStore';
 import { getBranches, getParcel } from '@/lib/parcelService';
 import NativeSelect, { OTHER_VALUE, resolveSelectValue } from '@/components/NativeSelect';
 import { toast } from 'sonner';
-import type { Parcel } from '@/types/parcel';
+import type { DeliveryMatchStatus, Parcel } from '@/types/parcel';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { MapView } from '@/components/Map';
 import { isValidTrackingId, sanitizeTextInput, validateRequiredText } from '@/lib/validation';
@@ -82,6 +82,8 @@ export default function ConfirmReceipt({
   const [forwardToBranch, setForwardToBranch] = useState('');
   const [isProxy, setIsProxy] = useState(false);
   const [proxyName, setProxyName] = useState('');
+  const [deliveryMatchStatus, setDeliveryMatchStatus] = useState<DeliveryMatchStatus>('MATCHED_DECLARED_DESTINATION');
+  const [deliveryMismatchReason, setDeliveryMismatchReason] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
@@ -139,6 +141,8 @@ export default function ConfirmReceipt({
         setForwardFromBranch(branches.includes(currentBranch) ? currentBranch : OTHER_VALUE);
 
         setCheckedParcel(p);
+        setDeliveryMatchStatus('MATCHED_DECLARED_DESTINATION');
+        setDeliveryMismatchReason('');
 
         // ── Determine if truly delivered using events array (primary) or note regex (fallback) ──
         const currentStatus = p['สถานะ'];
@@ -208,6 +212,8 @@ export default function ConfirmReceipt({
     setForwardToBranch('');
     setIsProxy(false);
     setProxyName('');
+    setDeliveryMatchStatus('MATCHED_DECLARED_DESTINATION');
+    setDeliveryMismatchReason('');
     setCheckedParcel(null);
     setIsDelivered(false);
     setIsConfirmDialogOpen(false);
@@ -350,6 +356,12 @@ export default function ConfirmReceipt({
         eventPerson = sanitizeTextInput(checkedParcel?.['ผู้รับ'], 200);
       }
 
+      const isFinalDelivery = !isForwarding && (eventType === 'DELIVERED' || eventType === 'PROXY');
+      const finalDeliveryMatchStatus = isFinalDelivery ? deliveryMatchStatus : undefined;
+      const safeDeliveryMismatchReason = isFinalDelivery && deliveryMatchStatus === 'DELIVERED_ELSEWHERE'
+        ? sanitizeTextInput(deliveryMismatchReason, 500)
+        : undefined;
+
       const validationError =
         !photoUrl ? 'กรุณาแนบรูปหลักฐาน' :
         !eventType ? 'กรุณาเลือกวิธีบันทึกการจัดส่ง' :
@@ -358,6 +370,7 @@ export default function ConfirmReceipt({
           validateRequiredText(eventDestLocation, 'จุดหมายถัดไป', 1, 100)
         ) :
         isProxy ? validateRequiredText(eventPerson, 'ชื่อผู้รับแทน', 1, 200) :
+        isFinalDelivery && deliveryMatchStatus === 'DELIVERED_ELSEWHERE' ? validateRequiredText(safeDeliveryMismatchReason, 'เหตุผลที่ส่งคนละจุด', 1, 500) :
         null;
 
       if (validationError) {
@@ -386,7 +399,9 @@ export default function ConfirmReceipt({
         finalEventType,
         eventLocation,
         eventDestLocation,
-        eventPerson
+        eventPerson,
+        finalDeliveryMatchStatus,
+        safeDeliveryMismatchReason
       );
       
       if (response && response.success) {
@@ -403,6 +418,8 @@ export default function ConfirmReceipt({
         setForwardToBranch('');
         setIsProxy(false);
         setProxyName('');
+        setDeliveryMatchStatus('MATCHED_DECLARED_DESTINATION');
+        setDeliveryMismatchReason('');
         setCheckedParcel(null);
         setIsDelivered(false);
         resetGeo();
@@ -654,6 +671,21 @@ export default function ConfirmReceipt({
               </div>
             </div>
 
+            <div className="rounded-2xl border border-primary/15 bg-primary/5 p-3">
+              <div className="flex items-start gap-2.5">
+                <span className="material-symbols-outlined mt-0.5 text-lg text-primary">flag</span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant/60">ปลายทางที่ระบุไว้</p>
+                  <p className="break-words font-display text-base font-black leading-snug text-primary">
+                    {checkedParcel?.['สาขาผู้รับ'] || '-'}
+                  </p>
+                  <p className="mt-1 text-xs leading-snug text-on-surface-variant/70">
+                    GPS ด้านล่างเป็นหลักฐานตำแหน่งตอนกดส่ง ไม่ได้ใช้ตัดสินอัตโนมัติว่าตรงปลายทาง
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-4">
               <div className="space-y-3">
                 <div className={`rounded-2xl border-2 p-3 transition-all duration-300 ${isForwarding ? 'bg-secondary-fixed/10 border-secondary-container' : 'bg-white border-outline-variant/30 hover:border-outline-variant'}`}>
@@ -728,6 +760,59 @@ export default function ConfirmReceipt({
                 </div>
               </div>
 
+              {!isForwarding && (
+                <div className="space-y-3 rounded-2xl border border-outline-variant/30 bg-white p-3">
+                  <div>
+                    <p className="font-display text-sm font-black text-primary">ยืนยันจุดส่งจริง</p>
+                    <p className="text-[11px] leading-tight text-on-surface-variant/60">
+                      เลือกตามหน้างานจริงเมื่อไม่มีพิกัดปลายทางอ้างอิง
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeliveryMatchStatus('MATCHED_DECLARED_DESTINATION');
+                        setDeliveryMismatchReason('');
+                      }}
+                      className={`flex min-h-16 items-center gap-2 rounded-2xl border px-3 py-2 text-left transition-all ${
+                        deliveryMatchStatus === 'MATCHED_DECLARED_DESTINATION'
+                          ? 'border-green-500 bg-green-50 text-green-900'
+                          : 'border-outline-variant/40 bg-surface-container-lowest text-on-surface-variant hover:border-primary/30'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-xl">task_alt</span>
+                      <span className="text-sm font-black leading-snug">ส่งตรงตามปลายทางที่ระบุ</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryMatchStatus('DELIVERED_ELSEWHERE')}
+                      className={`flex min-h-16 items-center gap-2 rounded-2xl border px-3 py-2 text-left transition-all ${
+                        deliveryMatchStatus === 'DELIVERED_ELSEWHERE'
+                          ? 'border-amber-500 bg-amber-50 text-amber-950'
+                          : 'border-outline-variant/40 bg-surface-container-lowest text-on-surface-variant hover:border-primary/30'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-xl">move_location</span>
+                      <span className="text-sm font-black leading-snug">ส่งคนละจุด / ฝากไว้ที่อื่น</span>
+                    </button>
+                  </div>
+                  {deliveryMatchStatus === 'DELIVERED_ELSEWHERE' && (
+                    <div className="animate-in slide-in-from-top-2 duration-300">
+                      <label className="mb-1.5 block px-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">
+                        เหตุผลที่ส่งคนละจุด
+                      </label>
+                      <textarea
+                        placeholder="เช่น ลูกค้าให้ฝากอีกแผนก, ฝากไว้ที่ป้อมยาม, ชื่อสถานที่ในระบบไม่ละเอียด..."
+                        value={deliveryMismatchReason}
+                        onChange={(e) => setDeliveryMismatchReason(sanitizeTextInput(e.target.value, 500))}
+                        className="min-h-[72px] w-full resize-none rounded-2xl border border-amber-200 bg-white px-4 py-2.5 font-display text-sm outline-none transition-all focus:ring-1 focus:ring-amber-500"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest px-1">หมายเหตุเพิ่มเติม (ไม่บังคับ)</label>
                 <textarea
@@ -754,7 +839,8 @@ export default function ConfirmReceipt({
                     !forwardSender.trim()
                     || !resolveSelectValue(forwardToBranch)
                   ))
-                  || (isProxy && !proxyName.trim())}
+                  || (isProxy && !proxyName.trim())
+                  || (!isForwarding && deliveryMatchStatus === 'DELIVERED_ELSEWHERE' && !deliveryMismatchReason.trim())}
                 className="group flex h-13 min-w-0 items-center justify-center gap-2 rounded-2xl bg-primary px-3 font-display text-sm font-black text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] hover:bg-primary/95 active:scale-[0.98] disabled:scale-100 disabled:bg-on-surface-variant/30 disabled:shadow-none sm:text-base"
               >
                 บันทึกผลการส่ง
@@ -851,6 +937,29 @@ export default function ConfirmReceipt({
                 <div>
                   <p className="text-[10px] text-green-600/70 font-bold uppercase tracking-wider">ผู้รับ</p>
                   <p className="font-bold text-green-900 text-sm">{checkedParcel?.['ผู้รับ'] || '-'}</p>
+                </div>
+              </div>
+            )}
+
+            {!isForwarding && (
+              <div className={`rounded-2xl px-4 py-3 border flex items-start gap-3 ${
+                deliveryMatchStatus === 'DELIVERED_ELSEWHERE'
+                  ? 'bg-amber-50 border-amber-100 text-amber-950'
+                  : 'bg-green-50 border-green-100 text-green-900'
+              }`}>
+                <span className="material-symbols-outlined text-xl">
+                  {deliveryMatchStatus === 'DELIVERED_ELSEWHERE' ? 'move_location' : 'task_alt'}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">ยืนยันจุดส่งจริง</p>
+                  <p className="text-sm font-black">
+                    {deliveryMatchStatus === 'DELIVERED_ELSEWHERE' ? 'ส่งคนละจุด / ฝากไว้ที่อื่น' : 'ส่งตรงตามปลายทางที่ระบุ'}
+                  </p>
+                  {deliveryMatchStatus === 'DELIVERED_ELSEWHERE' && (
+                    <p className="mt-1 break-words text-xs font-semibold leading-snug opacity-80">
+                      {deliveryMismatchReason || '-'}
+                    </p>
+                  )}
                 </div>
               </div>
             )}

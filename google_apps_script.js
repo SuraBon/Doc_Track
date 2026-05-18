@@ -13,6 +13,7 @@ const TRACKING_ID_REGEX = /^TRK\d{8}\d{4,}$/;
 const EMPLOYEE_ID_REGEX = /^[A-Z0-9_]{1,50}$/;
 const SAFE_PASSWORD_REGEX = /^[A-Za-z0-9!@#$%^&*()_\-+=.?]{4,100}$/;
 const VALID_EVENT_TYPES = ["FORWARD", "PROXY", "DELIVERED"];
+const VALID_DELIVERY_MATCH_STATUSES = ["MATCHED_DECLARED_DESTINATION", "DELIVERED_ELSEWHERE"];
 
 const SHEET_URL = "";
 const DOC_TRACK_FOLDER_ID = "";
@@ -49,7 +50,9 @@ const EVENT_HEADERS = [
   "PhotoUrl",
   "Latitude",
   "Longitude",
-  "Note"
+  "Note",
+  "DeliveryMatchStatus",
+  "DeliveryMismatchReason"
 ];
 
 function getSpreadsheet() {
@@ -903,7 +906,9 @@ function handleCreateParcel(payload) {
       finalPhotoUrl || "",
       originLatitude,
       originLongitude,
-      note || escapeSheetValue("รับเข้าระบบ")
+      note || escapeSheetValue("รับเข้าระบบ"),
+      "",
+      ""
     ]);
   }
 
@@ -935,7 +940,9 @@ function getParcelEventsMap() {
         photoUrl: String(row[7]),
         latitude: row[8] !== "" ? Number(row[8]) : undefined,
         longitude: row[9] !== "" ? Number(row[9]) : undefined,
-        note: String(row[10])
+        note: String(row[10]),
+        deliveryMatchStatus: row[11] ? String(row[11]) : "",
+        deliveryMismatchReason: row[12] ? String(row[12]) : ""
       };
 
       if (!eventsByTrackingId[trackingId]) {
@@ -1132,6 +1139,14 @@ function handleConfirmReceipt(payload) {
   const eventLocation = escapeSheetValue(payload.location || "");
   const eventDestLocation = escapeSheetValue(payload.destLocation || "");
   const eventPerson = escapeSheetValue(payload.person || "");
+  const isFinalDeliveryEvent = payload.eventType === "DELIVERED" || payload.eventType === "PROXY";
+  const rawDeliveryMatchStatus = String(payload.deliveryMatchStatus || "");
+  const deliveryMatchStatus = isFinalDeliveryEvent
+    ? escapeSheetValue(rawDeliveryMatchStatus || "MATCHED_DECLARED_DESTINATION")
+    : "";
+  const deliveryMismatchReason = isFinalDeliveryEvent && deliveryMatchStatus === "DELIVERED_ELSEWHERE"
+    ? escapeSheetValue(payload.deliveryMismatchReason || "")
+    : "";
   if (sanitizedNote.length > MAX_NOTE_LENGTH) {
     return createJsonResponse({ success: false, error: "หมายเหตุยาวเกินไป" });
   }
@@ -1140,6 +1155,15 @@ function handleConfirmReceipt(payload) {
   }
   if (eventPerson.length > 200) {
     return createJsonResponse({ success: false, error: "ชื่อผู้รับ/ผู้ส่งต่อยาวเกินไป" });
+  }
+  if (deliveryMatchStatus && VALID_DELIVERY_MATCH_STATUSES.indexOf(deliveryMatchStatus) === -1) {
+    return createJsonResponse({ success: false, error: "สถานะยืนยันปลายทางไม่ถูกต้อง" });
+  }
+  if (deliveryMismatchReason.length > 500) {
+    return createJsonResponse({ success: false, error: "เหตุผลที่ส่งคนละจุดยาวเกินไป" });
+  }
+  if (deliveryMatchStatus === "DELIVERED_ELSEWHERE" && !deliveryMismatchReason) {
+    return createJsonResponse({ success: false, error: "กรุณาระบุเหตุผลที่ส่งคนละจุด" });
   }
   const imageValidation = validateImagePayload(payload.photoUrl);
   if (!imageValidation.ok) {
@@ -1277,7 +1301,9 @@ function handleConfirmReceipt(payload) {
             finalPhotoUrl || "",
             eventLatitude,
             eventLongitude,
-            sanitizedNote || ""
+            sanitizedNote || "",
+            deliveryMatchStatus,
+            deliveryMismatchReason
           ]);
         }
       }

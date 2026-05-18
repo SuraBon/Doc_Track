@@ -4,6 +4,7 @@
  */
 
 export type ParcelStatus = 'รอจัดส่ง' | 'กำลังจัดส่ง' | 'ส่งสำเร็จ';
+export type DeliveryMatchStatus = 'MATCHED_DECLARED_DESTINATION' | 'DELIVERED_ELSEWHERE';
 
 export interface Parcel {
   TrackingID: string;
@@ -37,6 +38,8 @@ export interface ParcelEventRecord {
   latitude?: number;
   longitude?: number;
   note?: string;
+  deliveryMatchStatus?: DeliveryMatchStatus;
+  deliveryMismatchReason?: string;
 }
 
 export interface ParcelSummary {
@@ -116,6 +119,8 @@ export interface ConfirmReceiptPayload {
   location?: string;
   destLocation?: string;
   person?: string;
+  deliveryMatchStatus?: DeliveryMatchStatus;
+  deliveryMismatchReason?: string;
   pin?: string;
 }
 

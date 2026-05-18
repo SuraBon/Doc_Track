@@ -4,6 +4,7 @@
  */
 
 export type TimelineStatus = 'completed' | 'current' | 'pending';
+export type DeliveryMatchStatus = 'MATCHED_DECLARED_DESTINATION' | 'DELIVERED_ELSEWHERE';
 
 export interface TimelineEvent {
   id: string;
@@ -17,6 +18,8 @@ export interface TimelineEvent {
   imageUrl?: string;
   latitude?: number;
   longitude?: number;
+  deliveryMatchStatus?: DeliveryMatchStatus;
+  deliveryMismatchReason?: string;
 }
 
 export interface ParcelTimeline {

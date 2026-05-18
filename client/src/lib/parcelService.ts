@@ -10,6 +10,7 @@ import type {
   GetParcelResponse,
   ConfirmReceiptPayload,
   ConfirmReceiptResponse,
+  DeliveryMatchStatus,
   ExportSummaryResponse,
   ParcelSummary,
   Parcel,
@@ -265,9 +266,25 @@ export async function confirmReceipt(
   location?: string,
   destLocation?: string,
   person?: string,
+  deliveryMatchStatus?: DeliveryMatchStatus,
+  deliveryMismatchReason?: string,
   pin?: string,
 ): Promise<ConfirmReceiptResponse> {
-  const payload: ConfirmReceiptPayload = { action: 'confirmReceipt', trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person, pin };
+  const payload: ConfirmReceiptPayload = {
+    action: 'confirmReceipt',
+    trackingID,
+    photoUrl,
+    note,
+    latitude,
+    longitude,
+    eventType,
+    location,
+    destLocation,
+    person,
+    deliveryMatchStatus,
+    deliveryMismatchReason,
+    pin,
+  };
   try {
     return await callAPI<ConfirmReceiptResponse>(payload, {}, NO_RETRY);
   } catch (err) {

@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { Parcel, ParcelSummary } from '@/types/parcel';
+import type { DeliveryMatchStatus, Parcel, ParcelSummary } from '@/types/parcel';
 import * as parcelService from '@/lib/parcelService';
 import { summarizeParcels } from '@/lib/parcelStatus';
 
@@ -44,6 +44,8 @@ interface ParcelStoreValue {
     location?: string,
     destLocation?: string,
     person?: string,
+    deliveryMatchStatus?: DeliveryMatchStatus,
+    deliveryMismatchReason?: string,
     pin?: string,
   ) => Promise<{ success: boolean; error?: string }>;
   removeParcelLocally: (trackingID: string) => void;
@@ -132,10 +134,10 @@ export function ParcelStoreProvider({ children }: { children: ReactNode }) {
   );
 
   const confirmReceipt = useCallback<ParcelStoreValue['confirmReceipt']>(
-    async (trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person, pin) => {
+    async (trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person, deliveryMatchStatus, deliveryMismatchReason, pin) => {
       setError(null);
       try {
-        const res = await parcelService.confirmReceipt(trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person, pin);
+        const res = await parcelService.confirmReceipt(trackingID, photoUrl, note, latitude, longitude, eventType, location, destLocation, person, deliveryMatchStatus, deliveryMismatchReason, pin);
         if (res.success) {
           // Optimistic update already applied by the caller (ConfirmReceipt page).
           // Only do a background refresh — don't block the UI.

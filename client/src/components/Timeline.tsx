@@ -214,6 +214,25 @@ export default function Timeline({ events, className = '', compact = false }: Ti
                       </span>
                     </div>
                   )}
+                  {event.deliveryMatchStatus && (
+                    <div>
+                      <span className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${
+                        event.deliveryMatchStatus === 'DELIVERED_ELSEWHERE'
+                          ? 'bg-amber-50 text-amber-800 border-amber-100'
+                          : 'bg-green-50 text-green-700 border-green-100'
+                      }`}>
+                        <span className="material-symbols-outlined text-sm">
+                          {event.deliveryMatchStatus === 'DELIVERED_ELSEWHERE' ? 'move_location' : 'task_alt'}
+                        </span>
+                        {event.deliveryMatchStatus === 'DELIVERED_ELSEWHERE' ? 'ส่งคนละจุด' : 'ส่งตรงปลายทาง'}
+                      </span>
+                      {event.deliveryMismatchReason && (
+                        <p className="mt-2 rounded-xl bg-surface-container-lowest px-3 py-2 text-xs font-semibold leading-snug text-on-surface-variant/70">
+                          เหตุผล: {event.deliveryMismatchReason}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Metadata Row */}
                   <div className={`flex flex-wrap items-center border-t border-outline-variant/10 ${compact ? 'gap-3 pt-3' : 'gap-4 pt-4'}`}>

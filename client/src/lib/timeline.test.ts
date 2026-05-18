@@ -60,4 +60,30 @@ describe('parseParcelTimeline', () => {
     expect(events[events.length - 1].description).toContain('สมชาย');
     expect(events[events.length - 1].imageUrl).toContain('https://example.com/p.jpg');
   });
+
+  it('shows delivery confirmation details for modern delivered events', () => {
+    const parcel = createParcel({
+      'สถานะ': 'ส่งสำเร็จ',
+      events: [{
+        id: 'EVT2',
+        trackingId: 'TRK1',
+        timestamp: '1 มกราคม 2569',
+        eventType: 'DELIVERED',
+        location: 'มีนบุรี',
+        photoUrl: 'https://example.com/p.jpg',
+        latitude: 13.8,
+        longitude: 100.6,
+        deliveryMatchStatus: 'DELIVERED_ELSEWHERE',
+        deliveryMismatchReason: 'ฝากไว้ที่ป้อมยาม',
+      }],
+    });
+    const events = parseParcelTimeline(parcel);
+    expect(events[0]).toMatchObject({
+      title: 'ส่งสำเร็จ',
+      deliveryMatchStatus: 'DELIVERED_ELSEWHERE',
+      deliveryMismatchReason: 'ฝากไว้ที่ป้อมยาม',
+    });
+    expect(events[0].description).toContain('ส่งคนละจุด');
+    expect(events[0].description).toContain('ฝากไว้ที่ป้อมยาม');
+  });
 });

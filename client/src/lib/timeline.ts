@@ -16,6 +16,16 @@ export function parseParcelTimeline(parcel: Parcel): TimelineEvent[] {
   const originLng = typeof parcel['OriginLongitude'] === 'number' ? parcel['OriginLongitude'] : undefined;
   const creationLat = originLat ?? parcelLat;
   const creationLng = originLng ?? parcelLng;
+  const appendDeliveryConfirmation = (description: string, evt: NonNullable<Parcel['events']>[number]) => {
+    if (evt.deliveryMatchStatus === 'DELIVERED_ELSEWHERE') {
+      const reason = evt.deliveryMismatchReason ? ` เหตุผล: ${evt.deliveryMismatchReason}` : '';
+      return `${description} (ส่งคนละจุด / ฝากไว้ที่อื่น)${reason}`;
+    }
+    if (evt.deliveryMatchStatus === 'MATCHED_DECLARED_DESTINATION') {
+      return `${description} (ยืนยันส่งตรงตามปลายทางที่ระบุ)`;
+    }
+    return description;
+  };
 
   // ── A. Modern Structured Events ────────────────────────────────────────────────
   if (parcel.events && parcel.events.length > 0) {
@@ -51,24 +61,28 @@ export function parseParcelTimeline(parcel: Parcel): TimelineEvent[] {
           id: String(idCounter++),
           status: 'completed',
           title: 'ส่งสำเร็จ',
-          description: `รับแทนโดย: ${evt.person || '-'}`,
+          description: appendDeliveryConfirmation(`รับแทนโดย: ${evt.person || '-'}`, evt),
           timestamp: evt.timestamp,
           location: evt.location,
           imageUrl: evt.photoUrl,
           latitude: evt.latitude,
           longitude: evt.longitude,
+          deliveryMatchStatus: evt.deliveryMatchStatus,
+          deliveryMismatchReason: evt.deliveryMismatchReason,
         });
       } else if (evt.eventType === 'DELIVERED') {
         events.push({
           id: String(idCounter++),
           status: 'completed',
           title: 'ส่งสำเร็จ',
-          description: 'ส่งถึงปลายทางเรียบร้อย',
+          description: appendDeliveryConfirmation('ส่งถึงปลายทางเรียบร้อย', evt),
           timestamp: evt.timestamp,
           location: evt.location,
           imageUrl: evt.photoUrl,
           latitude: evt.latitude,
           longitude: evt.longitude,
+          deliveryMatchStatus: evt.deliveryMatchStatus,
+          deliveryMismatchReason: evt.deliveryMismatchReason,
         });
       }
     }
